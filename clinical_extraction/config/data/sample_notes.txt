@@ -1,0 +1,322 @@
+================================================================
+CATEGORY 1: RAW OCR OUTPUTS (High Error Rate / Messy)
+================================================================
+
+CASE_001:
+Rx: AM0XICILLIN 500MG
+SIG: 1 CAP PO T1D FOR 7 DAYS. 
+NOTE: TAKE WITH F00D.
+
+CASE_002:
+DRUG: 1BUPR0FEN 4OOmg
+INST: 2 tabs every 6 h0urs PRN for pain.
+Do not exceed B1D without doc advice.
+
+CASE_003:
+L1S1N0PRIL 10mg. 
+1 tablet qd in the morning.
+Avoid salt substitut3s.
+
+CASE_004:
+MED: AT0RVASTAT1N 20 MG.
+TAKE 0NE TAB QHS. 
+TOTAL QTY: 30.
+
+================================================================
+CATEGORY 2: TTS / VOICE TRANSCRIPTIONS (Natural Language)
+================================================================
+
+VOICE_001:
+"Okay, the patient needs to start taking Metformin five hundred milligrams. 
+That's one pill twice a day with meals... uh... let's say breakfast and dinner. 
+Continue this for three months."
+
+VOICE_002:
+"Add Albuterol inhaler to the list. They should do two puffs 
+every four to six hours as needed for any shortness of breath. 
+Make sure they have it available at all times."
+
+VOICE_003:
+"I want her on Vitamin D3, ten thousand units once a week. 
+Usually on Sunday mornings. We will recheck levels in twelve weeks."
+
+================================================================
+CATEGORY 3: TYPED CLINICAL NOTES (Shorthand & Complex)
+================================================================
+
+TYPED_001:
+Prednisone 5mg: Start 40mg qd x5 days, then 20mg qd x5 days, 
+then 10mg qd x5 days then stop. (Tapering schedule)
+
+TYPED_002:
+Warfarin 2mg: 1 tab PO Mon/Wed/Fri, 0.5 tab Tue/Thu/Sat/Sun. 
+Check INR in 1 week.
+
+TYPED_003:
+Insulin Glargine (Lantus): 15 units Sub-Q at bedtime (qhs). 
+Monitor fasting BG daily.
+
+TYPED_004:
+Hydrocortisone 1% cream: Apply topical sl to affected area 
+bid (morning and night). Do not use on broken skin.
+
+================================================================
+CATEGORY 4: SUPPLEMENTS & COMPOUNDS (Non-Prescription)
+================================================================
+
+SUPP_001: 
+Omega-3 Fish Oil 1000mg - 1 softgel daily with food.
+Magnesium 250mg - 1 cap qhs for sleep.
+
+COMP_001:
+Neosporin ointment - apply to minor cuts tid for 3 days.
+Betadine solution - use for site prep as directed.
+
+================================================================
+CATEGORY 5: HIGH-COMPLEXITY OCR & SCRIBAL ERRORS
+================================================================
+
+CASE_X_001 (Line Merging & Character Swap):
+Rx: L1S1N0PRIL10MG TABS. SIG: T4K3 1.5 T4BS P0 B1D X 14 D4YS. 
+(Testing: Can it handle decimal doses like 1.5? Can it fix 'T4K3'?)
+
+CASE_X_002 (Symbol Noise & Units):
+M3D: G4B4P3NT1N % 300_MG_CAPS. 
+Instruction: Take (1) one cap @ nite for 3 days, then (1) cap B1D. 
+Total #90. Refills: 3.
+(Testing: Handling of symbols like %, @, and #)
+
+CASE_X_003 (The 'Zero vs O' Nightmare):
+H-C0RTIS0N3 CRE4M 1%. 
+Apply t0pical sl t0 affected ar3a 0nce daily. 
+Do n0t use 0n face.
+(Testing: Extensive O/0 swapping in non-drug words)
+
+================================================================
+CATEGORY 6: ADVANCED CLINICAL LOGIC (Tapers & Titrations)
+================================================================
+
+LOGIC_001 (The Prednisone Taper):
+Prednisone 10mg: 
+- 40mg (4 tabs) qd x 3 days
+- 30mg (3 tabs) qd x 3 days
+- 20mg (2 tabs) qd x 3 days
+- 10mg (1 tab) qd x 3 days, then stop.
+(Testing: Can the extractor track changing quantities over time?)
+
+LOGIC_002 (Sliding Scale Insulin):
+Humalog Insulin: Use Sub-Q before meals per scale:
+- If BG 150-200: 2 units
+- If BG 201-250: 4 units
+- If BG 251-300: 6 units
+- If BG >300: Call MD.
+(Testing: Range extraction and conditional instructions)
+
+================================================================
+CATEGORY 7: AMBIGUOUS TTS & NATURAL DIALOGUE
+================================================================
+
+VOICE_DEEP_01:
+"Patient is currently on... let me see... Advil for the back pain, 
+about four hundred milligrams maybe three times a day? 
+Oh, wait, she said she only takes it when it hurts, so mark that as PRN. 
+Also, let's start her on Zoloft, 50mg, but half a tablet for the first week."
+(Testing: "Corrective" speech where the speaker changes their mind)
+
+VOICE_DEEP_02:
+"He's taking a multivitamin, some fish oil—about a gram of that—and 
+Vitamin B12 shots once a month at the clinic. 
+No known drug allergies or active reactions."
+(Testing: Identifying supplements vs. injections)
+
+================================================================
+CATEGORY 8: LASA (Look-Alike Sound-Alike) PREDICTIONS
+================================================================
+
+LASA_001:
+Patient prescribed Zantac but OCR read it as Zyrtec. 
+Dose: 150mg. 
+(Testing: If the dose is 150mg, Sonali’s safety logic should know 
+Zyrtec doesn't come in 150mg, but Zantac does. This is a 'Contextual Fix'.)
+
+LASA_002:
+Prescription for 'Hydralazine' vs 'Hydroxyzine'. 
+Note: 'For blood pressure'.
+(Testing: Using the "Note" or "Indication" to verify the drug name.)
+
+================================================================
+CATEGORY 9: PEDIATRIC & WEIGHT-BASED DOSING
+================================================================
+
+CASE_PEDS_001 (Liquid Concentration Math):
+Rx: Amoxicillin 400mg/5mL Susp. 
+SIG: Give 6.5 mL PO BID x 10 days. 
+(Testing: Can the system differentiate between the total volume (mL) and the mg dosage?)
+
+CASE_PEDS_002 (Weight-Dependent PRN):
+MED: Acetaminophen 160mg/5mL. 
+DOSE: 15mg/kg/dose every 4-6 hrs PRN fever. 
+Note: Pt weight 22 lbs. Max 5 doses/day.
+(Testing: Unit conversion from lbs to kg and calculating the safe dose limit.)
+
+================================================================
+CATEGORY 10: OPHTHALMIC & OTIC (Eye/Ear Drops)
+================================================================
+
+CASE_EYE_001 (Laterality Abbreviations):
+Drug: Latanoprost 0.005% Sol. 
+Inst: 1 gtt OU QHS. 
+Do not use with contacts in.
+(Testing: Mapping 'gtt' to drops and 'OU' to both eyes.)
+
+
+
+CASE_EAR_001 (Positioning Logic):
+Rx: Ciprodex Otic. 
+Sig: 4 gtts AD BID x 7 days. 
+Keep ear upright for 2 mins post-admin.
+(Testing: Identifying 'AD' as the right ear vs. 'AS' for the left ear.)
+
+================================================================
+CATEGORY 11: DERMATOLOGICAL & TOPICAL (Surface Area)
+================================================================
+
+DERM_001 (Finger Tip Units):
+MED: Triamcinolone 0.1% Cream. 
+Apply 1.5 FTU to bilateral elbows and knees BID. 
+Total Qty: 30g tube.
+(Testing: Recognition of 'FTU' (Finger Tip Unit) as a valid clinical measurement.)
+
+DERM_002 (Frequency Taper):
+Clobetasol 0.05% Ointment. 
+Apply daily x 2 weeks, then MWF only for 2 weeks, then stop.
+(Testing: Parsing a "pulse" therapy schedule.)
+
+================================================================
+CATEGORY 12: INFUSION & INJECTION (Complex Delivery)
+================================================================
+
+INJ_001 (Auto-Injector / Pen):
+Ozempic 0.5mg/dose. 
+Inject 0.25mg Sub-Q once weekly x 4 weeks, 
+then increase to 0.5mg weekly.
+(Testing: Dose escalation within a single device.)
+
+INJ_002 (Inhaler Technique):
+Advair Diskus 250/50. 
+1 puff inhalatn bid. 
+Rinse mouth after use.
+(Testing: Identifying combined dosages (250/50) and specific post-admin instructions.)
+
+================================================================
+CATEGORY 13: EXTREME OCR DE-NOISING (Visual Garbage)
+================================================================
+
+CASE_X_004 (Fragmentation & Kerning):
+|V| E T F O R M I N  5 0 0 M G
+S I G :  T A K 3  1  T A B  W /  D 1 N N 3 R
+(Testing: Can the model join fragmented letters like '|V|' to form 'M'?)
+
+CASE_X_005 (The 'Slash' Ambiguity):
+Rx: Metoprolol Tartrate 25mg. 
+Sig: 1/2 tab BID x 14 days.
+(Testing: Distinguishing '1/2' as 0.5 tablets rather than '1 or 2' tablets.)
+
+================================================================
+CATEGORY 14: PHONETIC CLINICAL CONTEXT (Advanced TTS)
+================================================================
+
+VOICE_DEEP_03 (The Indication Clue):
+"The patient is struggling with insomnia. Let's try... uh... Lorazepam? 
+Actually, make it Temazepam, 15 milligrams at bedtime. 
+Wait, she has a history of falls, let's start with half a tab."
+(Testing: Final dose selection based on the "half a tab" correction and indication for sleep.)
+
+VOICE_DEEP_04 (Phonetic Confusion):
+"I need to order some 'Hum-a-log' for his meals. 
+Wait, no, he's on the 'Humu-lin'. Let me check the chart... 
+Yeah, it's Humulin R, 5 units before breakfast."
+(Testing: Discarding the incorrect brand 'Humalog' for the confirmed 'Humulin R'.)
+
+================================================================
+CATEGORY 15: HIGH-RISK CONTEXTUAL VALIDATION
+================================================================
+
+LASA_003 (Potentially Lethal Unit Errors):
+Rx: Levothyroxine 125mg. 
+Sig: 1 tab daily.
+(Testing: Safety logic should flag that Levothyroxine is dosed in mcg, not mg. 125mg would be a 1000x overdose.)
+
+LASA_004 (The Look-Alike Indication):
+Rx: Paxil 20mg. 
+Note: For Parkinson’s tremors.
+(Testing: Detecting that Paxil (Antidepressant) is likely an error for Pexola or Artane given the Parkinson's note.)
+
+================================================================
+CATEGORY 16: PRN LIMITS & MAX DOSING
+================================================================
+
+LOGIC_PRN_001 (The "Safety Ceiling"):
+Rx: Maxalt 10mg.
+Sig: 1 tab PO at onset of migraine. May repeat x1 in 2 hrs if no relief.
+DO NOT EXCEED 30MG IN 24 HOURS.
+(Testing: Extraction of secondary instructions and the absolute daily maximum mg limit.)
+
+LOGIC_PRN_002 (Non-Daily Frequency):
+Zolpidem 5mg.
+Take 1 tab qhs prn insomnia.
+Limit use to 3 nights per week.
+(Testing: Identifying constraints that restrict usage across a week rather than a day.)
+
+================================================================
+CATEGORY 17: PHARMACOGENETIC & LAB-DEPENDENT DOSING
+================================================================
+
+LOGIC_LAB_001 (Conditional Frequency):
+Enoxaparin (Lovenox).
+Dose: 1mg/kg sub-q q12h.
+If CrCl < 30mL/min, reduce frequency to once daily.
+(Testing: Can the system flag a dose change dependent on a laboratory value like Creatinine Clearance?)
+
+LOGIC_LAB_002 (The "Hold" Trigger):
+Warfarin 5mg.
+Take as directed per Coumadin Clinic.
+Current dose: 1.5 tabs daily. Hold if INR > 3.5.
+(Testing: Extraction of "Hold" instructions based on specific lab results.)
+
+================================================================
+CATEGORY 18: CHRONOTHERAPY & CALENDAR LOGIC
+================================================================
+
+CAL_001 (Non-Standard Monthly Interval):
+B12 (Cyanocobalamin) 1000mcg/mL.
+Inject 1mL IM on the first Monday of every month.
+(Testing: Complex temporal extraction that doesn't follow a simple "X days" pattern.)
+
+CAL_002 (Relative Cycle Start):
+Medroxyprogesterone 10mg.
+Take 1 tab daily for 10 days, starting on Day 16 of the menstrual cycle.
+(Testing: Logic that requires a "Day 1" anchor point to calculate the start date.)
+
+================================================================
+CATEGORY 19: COMPOUNDING & MULTI-INGREDIENT RATIOS
+================================================================
+
+COMP_002 (The "Magic Mouthwash"):
+Rx: 1:1:1 mixture of Viscous Lidocaine 2%, Maalox, and diphenhydramine 12.5mg/5mL.
+Sig: Swish and spit 10mL q4-6h prn mouth sores.
+(Testing: Ratio extraction and the ability to link three distinct medications to one administration instruction.)
+
+================================================================
+CATEGORY 20: ROUTE CONFLICTS & "OFF-LABEL" SENSITIVITY
+================================================================
+
+ROUTE_001 (Physical Impossibility):
+Rx: Phenergan 25mg Suppositories.
+Sig: 1 tab PO every 6 hours for nausea.
+(Testing: Identifying a conflict—a suppository cannot be taken PO (by mouth).)
+
+ROUTE_002 (Device-Specific Knowledge):
+M3D: SPROVATO 28 MG NASAL SPRAY.
+INST: Administer 3 devices (84 mg) under supervision.
+(Testing: Understanding that one "dose" involves multiple physical devices/units.)
