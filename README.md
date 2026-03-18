@@ -1,4 +1,4 @@
-## SafeMeds: A Web-Integrated Local-First Medication Management & Adherence System
+# SafeMeds: A Web-Integrated Local-First Medication Management & Adherence System
 
 ### Project Overview
 **SafeMeds** is a web-integrated, local-first medication management and adherence system. * It bridges the gap between complex physical prescriptions and actionable digital reminders by parsing clinical data to create a reliable notification system. * Designed with a focus on privacy and patient safety, the prototype operates without cloud dependency, making it ideal for elderly users or low-resource settings.
