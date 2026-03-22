@@ -1,0 +1,33 @@
+{
+  "name": "safemeds",
+  "version": "1.0.0",
+  "description": "**SafeMeds** is a web-integrated, local-first medication management and adherence system. * It bridges the gap between complex physical prescriptions and actionable digital reminders by parsing clinical data to create a reliable notification system. * Designed with a focus on privacy and patient safety, the prototype operates without cloud dependency, making it ideal for elderly users or low-resource settings.",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SoulDeplane/SafeMeds.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/SoulDeplane/SafeMeds/issues"
+  },
+  "homepage": "https://github.com/SoulDeplane/SafeMeds#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "body-parser": "^2.2.2",
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
