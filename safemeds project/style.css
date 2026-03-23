@@ -104,24 +104,6 @@ button {
   background: rgba(255, 255, 255, 0.16);
 }
 
-.sidebar-card {
-  margin-top: auto;
-  padding: 18px;
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.14);
-}
-
-.sidebar-card h3 {
-  margin: 0 0 8px;
-  font-size: 1rem;
-}
-
-.sidebar-card p {
-  margin: 0;
-  font-size: 0.9rem;
-  line-height: 1.6;
-}
-
 .main-content {
   padding: 28px;
 }
