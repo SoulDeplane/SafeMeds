@@ -139,16 +139,16 @@ app.delete("/api/medications/:id", async (req, res) => {
 app.get("/api/users", async (req, res) => {
   try {
     const result = await db.query(
-      "SELECT user_id, email, full_name, phone_number, date_of_birth, role, is_active, created_at FROM users ORDER BY created_at DESC"
+      "SELECT user_id, email, full_name, phone_number, date_of_birth, role, is_active, created_at FROM users ORDER BY created_at DESC",
     );
     res.json({
       success: true,
-      data: result.rows
+      data: result.rows,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -159,25 +159,25 @@ app.get("/api/users/:id", async (req, res) => {
     const { id } = req.params;
     const result = await db.query(
       "SELECT user_id, email, full_name, phone_number, date_of_birth, role, is_active, created_at FROM users WHERE user_id = $1",
-      [id]
+      [id],
     );
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        error: "User not found"
+        error: "User not found",
       });
     }
-    
+
     res.json({
       success: true,
-      data: result.rows[0]
+      data: result.rows[0],
     });
     // console.log(result)
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -186,46 +186,46 @@ app.get("/api/users/:id", async (req, res) => {
 app.post("/api/users", async (req, res) => {
   try {
     const { email, full_name, phone_number, date_of_birth, role } = req.body;
-    
+
     // Validation
     if (!email || !full_name || !role) {
       return res.status(400).json({
         success: false,
-        error: "email, full_name, and role are required"
+        error: "email, full_name, and role are required",
       });
     }
-    
+
     // Validate role
-    const validRoles = ['patient', 'doctor', 'admin'];
+    const validRoles = ["patient", "doctor", "admin"];
     if (!validRoles.includes(role)) {
       return res.status(400).json({
         success: false,
-        error: "role must be 'patient', 'doctor', or 'admin'"
+        error: "role must be 'patient', 'doctor', or 'admin'",
       });
     }
-    
+
     const result = await db.query(
       `INSERT INTO users (email, password_hash, full_name, phone_number, date_of_birth, role) 
        VALUES ($1, $2, $3, $4, $5, $6) 
        RETURNING user_id, email, full_name, phone_number, date_of_birth, role, is_active, created_at`,
-      [email, 'no_password', full_name, phone_number, date_of_birth, role]
+      [email, "no_password", full_name, phone_number, date_of_birth, role],
     );
-    
+
     res.status(201).json({
       success: true,
-      data: result.rows[0]
+      data: result.rows[0],
     });
   } catch (error) {
     // Handle unique constraint violation (duplicate email)
-    if (error.code === '23505') {
+    if (error.code === "23505") {
       return res.status(409).json({
         success: false,
-        error: "Email already exists"
+        error: "Email already exists",
       });
     }
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -234,19 +234,20 @@ app.post("/api/users", async (req, res) => {
 app.put("/api/users/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { email, full_name, phone_number, date_of_birth, role, is_active } = req.body;
-    
+    const { email, full_name, phone_number, date_of_birth, role, is_active } =
+      req.body;
+
     // Validate role if provided
     if (role) {
-      const validRoles = ['patient', 'doctor', 'admin'];
+      const validRoles = ["patient", "doctor", "admin"];
       if (!validRoles.includes(role)) {
         return res.status(400).json({
           success: false,
-          error: "role must be 'patient', 'doctor', or 'admin'"
+          error: "role must be 'patient', 'doctor', or 'admin'",
         });
       }
     }
-    
+
     const result = await db.query(
       `UPDATE users 
        SET email = COALESCE($1, email),
@@ -257,31 +258,31 @@ app.put("/api/users/:id", async (req, res) => {
            is_active = COALESCE($6, is_active)
        WHERE user_id = $7
        RETURNING user_id, email, full_name, phone_number, date_of_birth, role, is_active, created_at`,
-      [email, full_name, phone_number, date_of_birth, role, is_active, id]
+      [email, full_name, phone_number, date_of_birth, role, is_active, id],
     );
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        error: "User not found"
+        error: "User not found",
       });
     }
-    
+
     res.json({
       success: true,
-      data: result.rows[0]
+      data: result.rows[0],
     });
   } catch (error) {
     // Handle unique constraint violation
-    if (error.code === '23505') {
+    if (error.code === "23505") {
       return res.status(409).json({
         success: false,
-        error: "Email already exists"
+        error: "Email already exists",
       });
     }
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -290,27 +291,27 @@ app.put("/api/users/:id", async (req, res) => {
 app.delete("/api/users/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const result = await db.query(
       "DELETE FROM users WHERE user_id = $1 RETURNING user_id",
-      [id]
+      [id],
     );
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        error: "User not found"
+        error: "User not found",
       });
     }
-    
+
     res.json({
       success: true,
-      message: "User deleted successfully"
+      message: "User deleted successfully",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -345,7 +346,7 @@ app.get("/api/prescriptions", async (req, res) => {
 
 app.post("/api/prescriptions", async (req, res) => {
   try {
-     const {
+    const {
       patient_id,
       doctor_id,
       medication_id,
@@ -353,7 +354,7 @@ app.post("/api/prescriptions", async (req, res) => {
       frequency,
       start_date,
       end_date,
-      instructions
+      instructions,
     } = req.body;
 
     const result = await db.query(
@@ -374,7 +375,7 @@ app.post("/api/prescriptions", async (req, res) => {
     );
     res.json({
       success: true,
-      data: result.rows[0]
+      data: result.rows[0],
     });
   } catch (error) {
     console.log(error);
@@ -422,24 +423,42 @@ app.put("/api/prescriptions/:id", async (req, res) => {
 });
 
 app.delete("/api/prescriptions/:id", async (req, res) => {
- try {
-   const { id } = req.params;
-   const result = await db.query(
-     `
+  try {
+    const { id } = req.params;
+    const result = await db.query(
+      `
       DELETE FROM prescriptions WHERE prescription_id = $1 RETURNING prescription_id
     `,
-     [id],
-   );
-   res.json({
-     success: true,
-     data: result.rows[0],
-   });
- } catch (error) {
-   console.log(error);
- }
-
+      [id],
+    );
+    res.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    console.log(error);
+  }
 });
 
+// API for medication_schedules
+
+app.get("/api/medication_schedules", async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT *FROM medication_schedules`);
+    res.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+app.post("/api/medication_schedules", async (req, res) => {
+  try {
+  } catch (error) {}
+});
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
 });
