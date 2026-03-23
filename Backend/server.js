@@ -134,6 +134,7 @@ app.delete("/api/medications/:id", async (req, res) => {
   }
 });
 
+// API FOR users
 // 1. GET all users
 app.get("/api/users", async (req, res) => {
   try {
@@ -312,6 +313,131 @@ app.delete("/api/users/:id", async (req, res) => {
       error: error.message
     });
   }
+});
+
+// API for Prescriptions
+app.get("/api/prescriptions", async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT p.*, 
+              u.full_name as patient_name,
+              d.full_name as doctor_name,
+              m.medication_name,
+              m.dosage_form,
+              m.strength
+       FROM prescriptions p
+       LEFT JOIN users u ON p.patient_id = u.user_id
+       LEFT JOIN users d ON p.doctor_id = d.user_id
+       LEFT JOIN medications m ON p.medication_id = m.medication_id
+       ORDER BY p.created_at DESC`,
+    );
+    res.json({
+      success: true,
+      data: result.rows,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.post("/api/prescriptions", async (req, res) => {
+  try {
+     const {
+      patient_id,
+      doctor_id,
+      medication_id,
+      dosage,
+      frequency,
+      start_date,
+      end_date,
+      instructions
+    } = req.body;
+
+    const result = await db.query(
+      `INSERT INTO prescriptions 
+       (patient_id, doctor_id, medication_id, dosage, frequency, start_date, end_date, instructions) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+       RETURNING *`,
+      [
+        patient_id,
+        doctor_id,
+        medication_id,
+        dosage,
+        frequency,
+        start_date,
+        end_date,
+        instructions,
+      ],
+    );
+    res.json({
+      success: true,
+      data: result.rows[0]
+    });
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+app.put("/api/prescriptions/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    // ✅ ADD THIS LINE - extract variables from request body
+    const { dosage, frequency, start_date, end_date, instructions, is_active } =
+      req.body;
+
+    const result = await db.query(
+      `UPDATE prescriptions 
+       SET dosage = COALESCE($1, dosage),
+           frequency = COALESCE($2, frequency),
+           start_date = COALESCE($3, start_date),
+           end_date = COALESCE($4, end_date),
+           instructions = COALESCE($5, instructions),
+           is_active = COALESCE($6, is_active)
+       WHERE prescription_id = $7
+       RETURNING *`,
+      [dosage, frequency, start_date, end_date, instructions, is_active, id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Prescription not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    res.status(500).json({
+      // ✅ Also send proper error response
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.delete("/api/prescriptions/:id", async (req, res) => {
+ try {
+   const { id } = req.params;
+   const result = await db.query(
+     `
+      DELETE FROM prescriptions WHERE prescription_id = $1 RETURNING prescription_id
+    `,
+     [id],
+   );
+   res.json({
+     success: true,
+     data: result.rows[0],
+   });
+ } catch (error) {
+   console.log(error);
+ }
+
 });
 
 app.listen(port, () => {
