@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeMeds Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">💊</div>
+        <div>
+          <h1>SafeMeds</h1>
+          <p>Medicine Reminder System</p>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <button class="nav-item active">Dashboard</button>
+        <button class="nav-item">Users</button>
+        <button class="nav-item">Medications</button>
+        <button class="nav-item">Prescriptions</button>
+        <button class="nav-item">Schedules</button>
+        <button class="nav-item">Reminders</button>
+      </nav>
+
+      <div class="sidebar-card">
+        <h3>Backend Mapping</h3>
+        <p>Users, Medications, Prescriptions, Schedules and Reminders in one dashboard flow.</p>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <header class="topbar">
+        <div>
+          <p class="topbar-label">Welcome back 👋</p>
+          <h2>SafeMeds Admin Dashboard</h2>
+        </div>
+
+        <div class="topbar-actions">
+          <button id="refreshBtn" class="btn btn-light" type="button">Refresh Data</button>
+        </div>
+      </header>
+
+      <section class="stats-grid">
+        <article class="stat-box">
+          <span class="stat-title">Users Loaded</span>
+          <h3 id="usersCount">0</h3>
+          <p>Fetched from /api/users</p>
+        </article>
+
+        <article class="stat-box">
+          <span class="stat-title">Prescriptions Loaded</span>
+          <h3 id="prescriptionCount">0</h3>
+          <p>Fetched from /api/prescriptions</p>
+        </article>
+
+        <article class="stat-box">
+          <span class="stat-title">Medication Form</span>
+          <h3>Ready</h3>
+          <p>Connected to /api/medications</p>
+        </article>
+
+        <article class="stat-box">
+          <span class="stat-title">Reminder UI</span>
+          <h3>Prepared</h3>
+          <p>Ready for schedule/reminder APIs</p>
+        </article>
+      </section>
+
+      <section id="messageBox" class="message-box hidden"></section>
+
+      <section class="dashboard-grid">
+        <div class="left-panel">
+          <div class="panel-card">
+            <div class="panel-head">
+              <div>
+                <h3>Create Medication / Prescription</h3>
+                <p>Aligned with your backend database and APIs</p>
+              </div>
+              <span class="panel-badge">Interactive Form</span>
+            </div>
+
+            <div class="quick-actions">
+              <button id="photoCardBtn" class="quick-action" type="button">
+                <span class="quick-icon">📷</span>
+                <div>
+                  <strong>Upload Photo</strong>
+                  <small>Prescription image</small>
+                </div>
+              </button>
+
+              <button id="voiceCardBtn" class="quick-action" type="button">
+                <span class="quick-icon">🎤</span>
+                <div>
+                  <strong>Speech Input</strong>
+                  <small>Voice to text</small>
+                </div>
+              </button>
+
+              <button id="manualCardBtn" class="quick-action" type="button">
+                <span class="quick-icon">✏️</span>
+                <div>
+                  <strong>Manual Entry</strong>
+                  <small>Fill form directly</small>
+                </div>
+              </button>
+            </div>
+
+            <form id="prescriptionForm" class="form-grid">
+              <div class="form-field">
+                <label for="patientSelect">Patient</label>
+                <select id="patientSelect" required>
+                  <option value="">Select patient</option>
+                </select>
+              </div>
+
+              <div class="form-field">
+                <label for="doctorSelect">Doctor</label>
+                <select id="doctorSelect">
+                  <option value="">Select doctor</option>
+                </select>
+              </div>
+
+              <div class="form-field full-width">
+                <label for="medicationName">Medication Name</label>
+                <input id="medicationName" type="text" placeholder="e.g. Dolo 650" required />
+              </div>
+
+              <div class="form-field">
+                <label for="dosageForm">Dosage Form</label>
+                <select id="dosageForm" required>
+                  <option value="tablet">tablet</option>
+                  <option value="capsule">capsule</option>
+                  <option value="liquid">liquid</option>
+                </select>
+              </div>
+
+              <div class="form-field">
+                <label for="strength">Strength</label>
+                <input id="strength" type="text" placeholder="e.g. 500mg" />
+              </div>
+
+              <div class="form-field">
+                <label for="dosage">Dosage</label>
+                <input id="dosage" type="text" placeholder="e.g. 1 tablet" required />
+              </div>
+
+              <div class="form-field">
+                <label for="frequency">Frequency</label>
+                <input id="frequency" type="text" placeholder="e.g. 2 times daily" required />
+              </div>
+
+              <div class="form-field">
+                <label for="startDate">Start Date</label>
+                <input id="startDate" type="date" required />
+              </div>
+
+              <div class="form-field">
+                <label for="endDate">End Date</label>
+                <input id="endDate" type="date" />
+              </div>
+
+              <div class="form-field full-width">
+                <label for="instructions">Instructions</label>
+                <textarea id="instructions" rows="3" placeholder="e.g. Take after breakfast"></textarea>
+              </div>
+
+              <div class="form-field">
+                <label for="scheduleTime">Schedule Time</label>
+                <input id="scheduleTime" type="time" />
+              </div>
+
+              <div class="form-field">
+                <label for="reminderType">Reminder Type</label>
+                <select id="reminderType">
+                  <option value="in_app">in_app</option>
+                  <option value="push">push</option>
+                  <option value="sms">sms</option>
+                  <option value="email">email</option>
+                </select>
+              </div>
+
+              <div class="form-field full-width">
+                <label for="photoInput">Prescription Photo</label>
+                <input id="photoInput" type="file" accept="image/*" hidden />
+                <button id="uploadPhotoBtn" class="upload-box" type="button">
+                  <span class="upload-icon">🖼️</span>
+                  <div>
+                    <strong>Choose prescription image</strong>
+                    <small id="photoStatus">No image selected</small>
+                  </div>
+                </button>
+                <img id="previewImage" class="preview-image hidden" alt="Prescription Preview" />
+              </div>
+
+              <div class="form-field full-width">
+                <label>Speech to Text</label>
+                <div class="voice-actions">
+                  <button id="voiceBtn" class="btn btn-primary" type="button">🎤 Start Speaking</button>
+                  <button id="clearVoiceBtn" class="btn btn-light" type="button">Clear Voice Text</button>
+                </div>
+                <small id="voiceStatus">Speak medicine name, dosage, frequency or instructions.</small>
+              </div>
+
+              <div class="form-actions full-width">
+                <button id="saveMedicationBtn" class="btn btn-light" type="button">Save Medication Only</button>
+                <button id="createPrescriptionBtn" class="btn btn-primary" type="submit">Create Prescription</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="right-panel">
+          <div class="panel-card">
+            <div class="panel-head">
+              <div>
+                <h3>Recent Prescriptions</h3>
+                <p>Live data from backend</p>
+              </div>
+            </div>
+            <div id="prescriptionList" class="record-list"></div>
+          </div>
+
+          <div class="panel-card">
+            <div class="panel-head">
+              <div>
+                <h3>Backend Notes</h3>
+                <p>Current integration status</p>
+              </div>
+            </div>
+            <ul class="notes-list">
+              <li>Users dropdowns are filled from API.</li>
+              <li>Medication save is connected.</li>
+              <li>Prescription creation is connected.</li>
+              <li>Schedule and reminder UI is ready for future APIs.</li>
+              <li>Photo upload is preview-only until backend upload endpoint is added.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
