@@ -344,6 +344,40 @@ app.get("/api/prescriptions", async (req, res) => {
   }
 });
 
+app.get("/api/schedules/prescription/:prescription_id", async (req, res) => {
+  try {
+    const { prescription_id } = req.params;
+
+    const result = await db.query(
+      `SELECT 
+         ms.*,
+         p.dosage as prescription_dosage,
+         p.frequency,
+         u.full_name as patient_name,
+         m.medication_name,
+         m.dosage_form,
+         m.strength
+       FROM medication_schedules ms
+       LEFT JOIN prescriptions p ON ms.prescription_id = p.prescription_id
+       LEFT JOIN users u ON p.patient_id = u.user_id
+       LEFT JOIN medications m ON p.medication_id = m.medication_id
+       WHERE ms.prescription_id = $1
+       ORDER BY ms.time_of_day ASC`,
+      [prescription_id],
+    );
+
+    res.json({
+      success: true,
+      data: result.rows,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 app.post("/api/prescriptions", async (req, res) => {
   try {
     const {
@@ -441,23 +475,206 @@ app.delete("/api/prescriptions/:id", async (req, res) => {
 });
 
 // API for medication_schedules
-
-app.get("/api/medication_schedules", async (req, res) => {
+app.post("/api/schedules", async (req, res) => {
   try {
-    const result = await db.query(`
-      SELECT *FROM medication_schedules`);
-    res.json({
+    const { prescription_id, time_of_day, dosage_amount } = req.body;
+
+    // Validation
+    if (!prescription_id || !time_of_day || !dosage_amount) {
+      return res.status(400).json({
+        success: false,
+        error: "prescription_id, time_of_day, and dosage_amount are required"
+      });
+    }
+
+    const result = await db.query(
+      `INSERT INTO medication_schedules 
+       (prescription_id, time_of_day, dosage_amount, is_active)
+       VALUES ($1, $2, $3, true)
+       RETURNING *`,
+      [prescription_id, time_of_day, dosage_amount]
+    );
+
+    res.status(201).json({
       success: true,
-      data: result.rows[0],
+      data: result.rows[0]
     });
   } catch (error) {
-    console.log(error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 });
 
-app.post("/api/medication_schedules", async (req, res) => {
+// 2. GET - Schedules for a Specific Prescription (SPECIFIC ROUTE - COMES FIRST)
+app.get("/api/schedules/prescription/:prescription_id", async (req, res) => {
   try {
-  } catch (error) {}
+    const { prescription_id } = req.params;
+
+    const result = await db.query(
+      `SELECT 
+         ms.*,
+         p.dosage as prescription_dosage,
+         p.frequency,
+         u.full_name as patient_name,
+         m.medication_name,
+         m.dosage_form,
+         m.strength
+       FROM medication_schedules ms
+       LEFT JOIN prescriptions p ON ms.prescription_id = p.prescription_id
+       LEFT JOIN users u ON p.patient_id = u.user_id
+       LEFT JOIN medications m ON p.medication_id = m.medication_id
+       WHERE ms.prescription_id = $1
+       ORDER BY ms.time_of_day ASC`,
+      [prescription_id]
+    );
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// 3. GET - Single Schedule by ID
+app.get("/api/schedules/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(
+      `SELECT 
+         ms.*,
+         p.dosage as prescription_dosage,
+         p.frequency,
+         p.instructions,
+         u.full_name as patient_name,
+         m.medication_name,
+         m.dosage_form,
+         m.strength
+       FROM medication_schedules ms
+       LEFT JOIN prescriptions p ON ms.prescription_id = p.prescription_id
+       LEFT JOIN users u ON p.patient_id = u.user_id
+       LEFT JOIN medications m ON p.medication_id = m.medication_id
+       WHERE ms.schedule_id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Schedule not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0]
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// 4. GET - All Schedules (GENERAL ROUTE - COMES LAST)
+app.get("/api/schedules", async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT 
+         ms.*,
+         p.dosage as prescription_dosage,
+         p.frequency,
+         u.full_name as patient_name,
+         m.medication_name
+       FROM medication_schedules ms
+       LEFT JOIN prescriptions p ON ms.prescription_id = p.prescription_id
+       LEFT JOIN users u ON p.patient_id = u.user_id
+       LEFT JOIN medications m ON p.medication_id = m.medication_id
+       ORDER BY ms.time_of_day ASC`
+    );
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// 5. PUT - Update Schedule
+app.put("/api/schedules/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { time_of_day, dosage_amount, is_active } = req.body;
+
+    const result = await db.query(
+      `UPDATE medication_schedules
+       SET time_of_day = COALESCE($1, time_of_day),
+           dosage_amount = COALESCE($2, dosage_amount),
+           is_active = COALESCE($3, is_active)
+       WHERE schedule_id = $4
+       RETURNING *`,
+      [time_of_day, dosage_amount, is_active, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Schedule not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0]
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// 6. DELETE - Delete Schedule
+app.delete("/api/schedules/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(
+      "DELETE FROM medication_schedules WHERE schedule_id = $1 RETURNING *",
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Schedule not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Schedule deleted successfully"
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
