@@ -1,6 +1,8 @@
 import re
 import json
 import os
+import rapidfuzz
+from typing import Any
 
 class MedicationExtractor:
     def __init__(self):
@@ -29,24 +31,45 @@ class MedicationExtractor:
         meds = self.entities.get("medications", [])
         sorted_meds = sorted(meds, key=len, reverse=True)
         
+        all_drugs = []
         for med in sorted_meds:
-            pattern = rf"\b{re.escape(med.upper())}\b"
+            med_str = str(med).upper()
+            pattern = rf"\b{re.escape(med_str)}\b"
             if re.search(pattern, text.upper()):
-                drug = med.upper()
-                break
+                if not drug:
+                    drug = med_str
+                all_drugs.append(med_str)
         
+        if not drug:
+            words = text.split()
+            best_match = None
+            best_score = 0
+            for word in words:
+                clean_word = re.sub(r'[^A-Z0-9]', '', word.upper())
+                if len(clean_word) < 3: continue
+                match = rapidfuzz.process.extractOne(clean_word, meds, scorer=rapidfuzz.fuzz.WRatio, processor=rapidfuzz.utils.default_process)
+                if match and match[1] > 90:
+                    if match[1] > best_score:
+                        best_score = match[1]
+                        best_match = match[0]
+            if best_match:
+                drug = str(best_match).upper()
+                all_drugs.append(drug)
+
         if not drug:
             match = re.search(r"^[A-Z]+(?:\s[A-Z]+)*", text)
             if match:
                 drug = match.group(0)
 
         patterns = {
-            "dosage": r"(\d+(?:\.\d+)?\s?(?:MG|MCG|ML|UNITS|G|GTTS|PUFF))",
+            "quantity": r"\b(ONE|TWO|1|2|1\.5|\d+(?:\.\d+)?)\s*(?:TAB|CAP|PUFF|ML|PILL|SOFTGEL)\b",
+            "strength": r"(\d+(?:\.\d+)?\s?(?:MG|MCG|ML|UNITS|G|GTTS|PUFF))\b",
             "route": r"\b(PO|SUB-Q|TOPICAL|IM|NASAL|INHALATN)\b",
-            "frequency": r"\b(QD|BID|TID|QID|QHS|PRN|EVERY\s\d\sHOURS|EVERY\s\d\sH0URS|DAILY)\b"
+            "frequency": r"\b(QD|BID|TID|QID|QHS|PRN|EVERY\s+(?:\d+|[A-Z]+)\s+(?:HOURS|H0URS|DAYS)|DAILY)\b",
+            "duration": r"(\d+\s*(?:DAYS|WEEKS|MONTHS))"
         }
         
-        extracted = {"drug": drug}
+        extracted: dict[str, Any] = {"drug": drug, "mentioned_drugs": list(set(all_drugs))}
         for key, pattern in patterns.items():
             match = re.search(pattern, text, re.IGNORECASE)
             extracted[key] = match.group(0).upper() if match else None

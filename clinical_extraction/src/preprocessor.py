@@ -5,6 +5,7 @@ import os
 class MedicalPreprocessor:
     def __init__(self):
         self.ocr_map = {}
+        self.conversions = {}
         self.leetspeak = {"4": "A", "3": "E", "1": "I", "8": "B", "5": "S", "7": "T", "0": "O"}
         self.prefixes = ["RX:", "SIG:", "MED:", "DRUG:", "INST:", "M3D:", "NOTE:"]
         self._load_keywords()
@@ -22,6 +23,7 @@ class MedicalPreprocessor:
                     with open(kw_path, 'r') as f:
                         data = json.load(f)
                         self.ocr_map = data.get("ocr_corrections", {})
+                        self.conversions = data.get("conversions", {})
                         return
                 except Exception as e:
                     print(f"Warning: Error loading {kw_path}: {e}")
@@ -35,6 +37,25 @@ class MedicalPreprocessor:
         
         for error, fix in self.ocr_map.items():
             text = text.replace(error.upper(), fix.upper())
+
+        # Number-to-Digit map
+        num_map = {
+            "FIVE HUNDRED": "500",
+            "ONE": "1",
+            "TWO": "2",
+            "THREE": "3",
+            "FOUR": "4",
+            "FIVE": "5",
+            "HALF": "0.5"
+        }
+        
+        # Pull explicit conversions but filter out acronyms (like BID -> 2)
+        for word, num in self.conversions.items():
+            if word.upper() in ["ONE", "TWO", "HALF"]:
+                num_map[word.upper()] = str(num)
+                
+        for word, digit in num_map.items():
+            text = re.sub(rf"\b{word}\b", digit, text)
 
         def fix_dosage(match):
             val = match.group(1)
