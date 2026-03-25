@@ -1,14 +1,28 @@
+import json
 from src import MedicalPreprocessor, MedicationExtractor, DataFormatter
 
-raw_input = "Rx: L1S1N0PRIL10MG TABS. SIG: T4K3 1.5 T4BS P0 B1D X 14 D4YS."
+def run_batch_test():
+    extractor = MedicationExtractor()
+    preprocessor = MedicalPreprocessor()
+    formatter = DataFormatter()
+    
+    with open("data/sample_notes.txt", "r") as f:
+        notes = f.read().split("================================================================")
 
-preprocessor = MedicalPreprocessor()
-clean_text = preprocessor.clean_text(raw_input)
+    results = []
+    for section in notes:
+        # Simple split to get individual cases
+        lines = section.strip().split('\n')
+        for line in lines:
+            if ":" in line and not line.startswith("CATEGORY"):
+                clean = preprocessor.clean_text(line)
+                raw_extracted = extractor.extract_med_info(clean)
+                final = formatter.standardize(raw_extracted)
+                results.append(final)
 
-extractor = MedicationExtractor()
-parsed_data = extractor.extract_med_info(clean_text)
+    with open("data/processed_results.json", "w") as out:
+        json.dump(results, out, indent=4)
+    print("Batch Processing Complete. Check processed_results.json")
 
-formatter = DataFormatter()
-final_json = formatter.standardize(parsed_data)
-
-print(final_json)
+if __name__ == "__main__":
+    run_batch_test()
