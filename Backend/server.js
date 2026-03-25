@@ -676,6 +676,319 @@ app.delete("/api/schedules/:id", async (req, res) => {
     });
   }
 });
+
+// API for reminders
+// 1. POST - Create Reminder
+app.post("/api/reminders", async (req, res) => {
+  try {
+    const {
+      schedule_id,
+      patient_id,
+      reminder_time,
+      reminder_type
+    } = req.body;
+
+    // Validation
+    if (!schedule_id || !patient_id || !reminder_time || !reminder_type) {
+      return res.status(400).json({
+        success: false,
+        error: "schedule_id, patient_id, reminder_time, and reminder_type are required"
+      });
+    }
+
+    // Validate reminder_type
+    const validTypes = ['push', 'sms', 'email', 'in_app'];
+    if (!validTypes.includes(reminder_type)) {
+      return res.status(400).json({
+        success: false,
+        error: "reminder_type must be one of: push, sms, email, in_app"
+      });
+    }
+
+    const result = await db.query(
+      `INSERT INTO reminders 
+       (schedule_id, patient_id, reminder_time, reminder_type, status)
+       VALUES ($1, $2, $3, $4, 'pending')
+       RETURNING *`,
+      [schedule_id, patient_id, reminder_time, reminder_type]
+    );
+
+    res.status(201).json({
+      success: true,
+      data: result.rows[0]
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// 2. GET - Reminders for a Specific Patient (SPECIFIC ROUTE FIRST)
+app.get("/api/reminders/patient/:patient_id", async (req, res) => {
+  try {
+    const { patient_id } = req.params;
+
+    const result = await db.query(
+      `SELECT 
+         r.*,
+         u.full_name as patient_name,
+         u.email as patient_email,
+         ms.time_of_day,
+         ms.dosage_amount,
+         p.frequency,
+         m.medication_name
+       FROM reminders r
+       LEFT JOIN users u ON r.patient_id = u.user_id
+       LEFT JOIN medication_schedules ms ON r.schedule_id = ms.schedule_id
+       LEFT JOIN prescriptions p ON ms.prescription_id = p.prescription_id
+       LEFT JOIN medications m ON p.medication_id = m.medication_id
+       WHERE r.patient_id = $1
+       ORDER BY r.reminder_time DESC`,
+      [patient_id]
+    );
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// 3. GET - Pending Reminders (SPECIFIC ROUTE)
+app.get("/api/reminders/pending", async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT 
+         r.*,
+         u.full_name as patient_name,
+         u.phone_number,
+         u.email as patient_email,
+         ms.time_of_day,
+         ms.dosage_amount,
+         m.medication_name
+       FROM reminders r
+       LEFT JOIN users u ON r.patient_id = u.user_id
+       LEFT JOIN medication_schedules ms ON r.schedule_id = ms.schedule_id
+       LEFT JOIN prescriptions p ON ms.prescription_id = p.prescription_id
+       LEFT JOIN medications m ON p.medication_id = m.medication_id
+       WHERE r.status = 'pending'
+       ORDER BY r.reminder_time ASC`
+    );
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// 4. GET - Single Reminder by ID
+app.get("/api/reminders/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(
+      `SELECT 
+         r.*,
+         u.full_name as patient_name,
+         u.phone_number,
+         u.email as patient_email,
+         ms.time_of_day,
+         ms.dosage_amount,
+         p.frequency,
+         p.instructions,
+         m.medication_name,
+         m.dosage_form,
+         m.strength
+       FROM reminders r
+       LEFT JOIN users u ON r.patient_id = u.user_id
+       LEFT JOIN medication_schedules ms ON r.schedule_id = ms.schedule_id
+       LEFT JOIN prescriptions p ON ms.prescription_id = p.prescription_id
+       LEFT JOIN medications m ON p.medication_id = m.medication_id
+       WHERE r.reminder_id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Reminder not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0]
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// 5. GET - All Reminders (GENERAL ROUTE LAST)
+app.get("/api/reminders", async (req, res) => {
+  try {
+    const result = await db.query(
+      `SELECT 
+         r.*,
+         u.full_name as patient_name,
+         ms.time_of_day,
+         m.medication_name
+       FROM reminders r
+       LEFT JOIN users u ON r.patient_id = u.user_id
+       LEFT JOIN medication_schedules ms ON r.schedule_id = ms.schedule_id
+       LEFT JOIN prescriptions p ON ms.prescription_id = p.prescription_id
+       LEFT JOIN medications m ON p.medication_id = m.medication_id
+       ORDER BY r.reminder_time DESC`
+    );
+
+    res.json({
+      success: true,
+      data: result.rows
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// 6. PUT - Update Reminder Status (mark as sent/dismissed/failed)
+app.put("/api/reminders/:id/status", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    // Validation
+    const validStatuses = ['pending', 'sent', 'failed', 'dismissed'];
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: "status must be one of: pending, sent, failed, dismissed"
+      });
+    }
+
+    // If status is 'sent', update sent_at timestamp
+    const updateQuery = status === 'sent' 
+      ? `UPDATE reminders
+         SET status = $1, sent_at = CURRENT_TIMESTAMP
+         WHERE reminder_id = $2
+         RETURNING *`
+      : `UPDATE reminders
+         SET status = $1
+         WHERE reminder_id = $2
+         RETURNING *`;
+
+    const result = await db.query(updateQuery, [status, id]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Reminder not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0]
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// 7. PUT - Update Reminder (general update)
+app.put("/api/reminders/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reminder_time, reminder_type } = req.body;
+
+    // Validate reminder_type if provided
+    if (reminder_type) {
+      const validTypes = ['push', 'sms', 'email', 'in_app'];
+      if (!validTypes.includes(reminder_type)) {
+        return res.status(400).json({
+          success: false,
+          error: "reminder_type must be one of: push, sms, email, in_app"
+        });
+      }
+    }
+
+    const result = await db.query(
+      `UPDATE reminders
+       SET reminder_time = COALESCE($1, reminder_time),
+           reminder_type = COALESCE($2, reminder_type)
+       WHERE reminder_id = $3
+       RETURNING *`,
+      [reminder_time, reminder_type, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Reminder not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0]
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// 8. DELETE - Delete Reminder
+app.delete("/api/reminders/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(
+      "DELETE FROM reminders WHERE reminder_id = $1 RETURNING *",
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Reminder not found"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Reminder deleted successfully"
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
 });
