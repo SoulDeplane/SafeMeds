@@ -2,10 +2,13 @@ import pg from "pg";
 import dotenv from "dotenv";
 import express from "express";
 import bodyParser from "body-parser";
+import cors from "cors";
 const app = express();
 const port = 3000;
+app.use(cors());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(express.static("../Frontend"));
 dotenv.config();
 const db = new pg.Client({
   host: process.env.DB_HOST,
@@ -412,7 +415,10 @@ app.post("/api/prescriptions", async (req, res) => {
       data: result.rows[0],
     });
   } catch (error) {
-    console.log(error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
 });
 
@@ -470,7 +476,10 @@ app.delete("/api/prescriptions/:id", async (req, res) => {
       data: result.rows[0],
     });
   } catch (error) {
-    console.log(error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
 });
 
@@ -483,7 +492,7 @@ app.post("/api/schedules", async (req, res) => {
     if (!prescription_id || !time_of_day || !dosage_amount) {
       return res.status(400).json({
         success: false,
-        error: "prescription_id, time_of_day, and dosage_amount are required"
+        error: "prescription_id, time_of_day, and dosage_amount are required",
       });
     }
 
@@ -492,17 +501,17 @@ app.post("/api/schedules", async (req, res) => {
        (prescription_id, time_of_day, dosage_amount, is_active)
        VALUES ($1, $2, $3, true)
        RETURNING *`,
-      [prescription_id, time_of_day, dosage_amount]
+      [prescription_id, time_of_day, dosage_amount],
     );
 
     res.status(201).json({
       success: true,
-      data: result.rows[0]
+      data: result.rows[0],
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -527,17 +536,17 @@ app.get("/api/schedules/prescription/:prescription_id", async (req, res) => {
        LEFT JOIN medications m ON p.medication_id = m.medication_id
        WHERE ms.prescription_id = $1
        ORDER BY ms.time_of_day ASC`,
-      [prescription_id]
+      [prescription_id],
     );
 
     res.json({
       success: true,
-      data: result.rows
+      data: result.rows,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -562,24 +571,24 @@ app.get("/api/schedules/:id", async (req, res) => {
        LEFT JOIN users u ON p.patient_id = u.user_id
        LEFT JOIN medications m ON p.medication_id = m.medication_id
        WHERE ms.schedule_id = $1`,
-      [id]
+      [id],
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        error: "Schedule not found"
+        error: "Schedule not found",
       });
     }
 
     res.json({
       success: true,
-      data: result.rows[0]
+      data: result.rows[0],
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -598,17 +607,17 @@ app.get("/api/schedules", async (req, res) => {
        LEFT JOIN prescriptions p ON ms.prescription_id = p.prescription_id
        LEFT JOIN users u ON p.patient_id = u.user_id
        LEFT JOIN medications m ON p.medication_id = m.medication_id
-       ORDER BY ms.time_of_day ASC`
+       ORDER BY ms.time_of_day ASC`,
     );
 
     res.json({
       success: true,
-      data: result.rows
+      data: result.rows,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -626,24 +635,24 @@ app.put("/api/schedules/:id", async (req, res) => {
            is_active = COALESCE($3, is_active)
        WHERE schedule_id = $4
        RETURNING *`,
-      [time_of_day, dosage_amount, is_active, id]
+      [time_of_day, dosage_amount, is_active, id],
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        error: "Schedule not found"
+        error: "Schedule not found",
       });
     }
 
     res.json({
       success: true,
-      data: result.rows[0]
+      data: result.rows[0],
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -655,24 +664,24 @@ app.delete("/api/schedules/:id", async (req, res) => {
 
     const result = await db.query(
       "DELETE FROM medication_schedules WHERE schedule_id = $1 RETURNING *",
-      [id]
+      [id],
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        error: "Schedule not found"
+        error: "Schedule not found",
       });
     }
 
     res.json({
       success: true,
-      message: "Schedule deleted successfully"
+      message: "Schedule deleted successfully",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -681,27 +690,23 @@ app.delete("/api/schedules/:id", async (req, res) => {
 // 1. POST - Create Reminder
 app.post("/api/reminders", async (req, res) => {
   try {
-    const {
-      schedule_id,
-      patient_id,
-      reminder_time,
-      reminder_type
-    } = req.body;
+    const { schedule_id, patient_id, reminder_time, reminder_type } = req.body;
 
     // Validation
     if (!schedule_id || !patient_id || !reminder_time || !reminder_type) {
       return res.status(400).json({
         success: false,
-        error: "schedule_id, patient_id, reminder_time, and reminder_type are required"
+        error:
+          "schedule_id, patient_id, reminder_time, and reminder_type are required",
       });
     }
 
     // Validate reminder_type
-    const validTypes = ['push', 'sms', 'email', 'in_app'];
+    const validTypes = ["push", "sms", "email", "in_app"];
     if (!validTypes.includes(reminder_type)) {
       return res.status(400).json({
         success: false,
-        error: "reminder_type must be one of: push, sms, email, in_app"
+        error: "reminder_type must be one of: push, sms, email, in_app",
       });
     }
 
@@ -710,17 +715,17 @@ app.post("/api/reminders", async (req, res) => {
        (schedule_id, patient_id, reminder_time, reminder_type, status)
        VALUES ($1, $2, $3, $4, 'pending')
        RETURNING *`,
-      [schedule_id, patient_id, reminder_time, reminder_type]
+      [schedule_id, patient_id, reminder_time, reminder_type],
     );
 
     res.status(201).json({
       success: true,
-      data: result.rows[0]
+      data: result.rows[0],
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -746,17 +751,17 @@ app.get("/api/reminders/patient/:patient_id", async (req, res) => {
        LEFT JOIN medications m ON p.medication_id = m.medication_id
        WHERE r.patient_id = $1
        ORDER BY r.reminder_time DESC`,
-      [patient_id]
+      [patient_id],
     );
 
     res.json({
       success: true,
-      data: result.rows
+      data: result.rows,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -779,17 +784,17 @@ app.get("/api/reminders/pending", async (req, res) => {
        LEFT JOIN prescriptions p ON ms.prescription_id = p.prescription_id
        LEFT JOIN medications m ON p.medication_id = m.medication_id
        WHERE r.status = 'pending'
-       ORDER BY r.reminder_time ASC`
+       ORDER BY r.reminder_time ASC`,
     );
 
     res.json({
       success: true,
-      data: result.rows
+      data: result.rows,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -818,24 +823,24 @@ app.get("/api/reminders/:id", async (req, res) => {
        LEFT JOIN prescriptions p ON ms.prescription_id = p.prescription_id
        LEFT JOIN medications m ON p.medication_id = m.medication_id
        WHERE r.reminder_id = $1`,
-      [id]
+      [id],
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        error: "Reminder not found"
+        error: "Reminder not found",
       });
     }
 
     res.json({
       success: true,
-      data: result.rows[0]
+      data: result.rows[0],
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -854,17 +859,17 @@ app.get("/api/reminders", async (req, res) => {
        LEFT JOIN medication_schedules ms ON r.schedule_id = ms.schedule_id
        LEFT JOIN prescriptions p ON ms.prescription_id = p.prescription_id
        LEFT JOIN medications m ON p.medication_id = m.medication_id
-       ORDER BY r.reminder_time DESC`
+       ORDER BY r.reminder_time DESC`,
     );
 
     res.json({
       success: true,
-      data: result.rows
+      data: result.rows,
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -876,21 +881,22 @@ app.put("/api/reminders/:id/status", async (req, res) => {
     const { status } = req.body;
 
     // Validation
-    const validStatuses = ['pending', 'sent', 'failed', 'dismissed'];
+    const validStatuses = ["pending", "sent", "failed", "dismissed"];
     if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({
         success: false,
-        error: "status must be one of: pending, sent, failed, dismissed"
+        error: "status must be one of: pending, sent, failed, dismissed",
       });
     }
 
     // If status is 'sent', update sent_at timestamp
-    const updateQuery = status === 'sent' 
-      ? `UPDATE reminders
+    const updateQuery =
+      status === "sent"
+        ? `UPDATE reminders
          SET status = $1, sent_at = CURRENT_TIMESTAMP
          WHERE reminder_id = $2
          RETURNING *`
-      : `UPDATE reminders
+        : `UPDATE reminders
          SET status = $1
          WHERE reminder_id = $2
          RETURNING *`;
@@ -900,18 +906,18 @@ app.put("/api/reminders/:id/status", async (req, res) => {
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        error: "Reminder not found"
+        error: "Reminder not found",
       });
     }
 
     res.json({
       success: true,
-      data: result.rows[0]
+      data: result.rows[0],
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -924,11 +930,11 @@ app.put("/api/reminders/:id", async (req, res) => {
 
     // Validate reminder_type if provided
     if (reminder_type) {
-      const validTypes = ['push', 'sms', 'email', 'in_app'];
+      const validTypes = ["push", "sms", "email", "in_app"];
       if (!validTypes.includes(reminder_type)) {
         return res.status(400).json({
           success: false,
-          error: "reminder_type must be one of: push, sms, email, in_app"
+          error: "reminder_type must be one of: push, sms, email, in_app",
         });
       }
     }
@@ -939,24 +945,24 @@ app.put("/api/reminders/:id", async (req, res) => {
            reminder_type = COALESCE($2, reminder_type)
        WHERE reminder_id = $3
        RETURNING *`,
-      [reminder_time, reminder_type, id]
+      [reminder_time, reminder_type, id],
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        error: "Reminder not found"
+        error: "Reminder not found",
       });
     }
 
     res.json({
       success: true,
-      data: result.rows[0]
+      data: result.rows[0],
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
@@ -968,24 +974,24 @@ app.delete("/api/reminders/:id", async (req, res) => {
 
     const result = await db.query(
       "DELETE FROM reminders WHERE reminder_id = $1 RETURNING *",
-      [id]
+      [id],
     );
 
     if (result.rows.length === 0) {
       return res.status(404).json({
         success: false,
-        error: "Reminder not found"
+        error: "Reminder not found",
       });
     }
 
     res.json({
       success: true,
-      message: "Reminder deleted successfully"
+      message: "Reminder deleted successfully",
     });
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message,
     });
   }
 });
