@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SafeMeds Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app-layout">
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-logo">💊</div>
+          <div>
+            <h1>SafeMeds</h1>
+            <p>Medicine Reminder System</p>
+          </div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <button class="nav-item active" data-section="dashboard">
+            Dashboard
+          </button>
+          <button class="nav-item" data-section="users">Users</button>
+          <button class="nav-item" data-section="medications">
+            Medications
+          </button>
+          <button class="nav-item" data-section="prescriptions">
+            Prescriptions
+          </button>
+          <button class="nav-item" data-section="schedules">Schedules</button>
+          <button class="nav-item" data-section="reminders">Reminders</button>
+        </nav>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div>
+            <p class="topbar-label">Welcome back 👋</p>
+            <h2>SafeMeds Admin Dashboard</h2>
+          </div>
+
+          <div class="topbar-actions">
+            <button id="refreshBtn" class="btn btn-light" type="button">
+              Refresh Data
+            </button>
+          </div>
+        </header>
+
+        <div id="dashboard-section" class="content-section active">
+          <section class="stats-grid">
+            <article class="stat-box">
+              <span class="stat-title">Users Loaded</span>
+              <h3 id="usersCount">0</h3>
+              <p>Fetched from /api/users</p>
+            </article>
+
+            <article class="stat-box">
+              <span class="stat-title">Prescriptions Loaded</span>
+              <h3 id="prescriptionCount">0</h3>
+              <p>Fetched from /api/prescriptions</p>
+            </article>
+
+            <article class="stat-box">
+              <span class="stat-title">Medication Form</span>
+              <h3>Ready</h3>
+              <p>Connected to /api/medications</p>
+            </article>
+
+            <article class="stat-box">
+              <span class="stat-title">Reminder UI</span>
+              <h3>Prepared</h3>
+              <p>Ready for schedule/reminder APIs</p>
+            </article>
+          </section>
+
+          <section id="messageBox" class="message-box hidden"></section>
+
+          <section class="dashboard-grid">
+            <div class="left-panel">
+              <div class="panel-card">
+                <div class="panel-head">
+                  <div>
+                    <h3>Create Medication / Prescription</h3>
+                    <p>Aligned with your backend database and APIs</p>
+                  </div>
+                  <span class="panel-badge">Interactive Form</span>
+                </div>
+
+                <div class="quick-actions">
+                  <button id="photoCardBtn" class="quick-action" type="button">
+                    <span class="quick-icon">📷</span>
+                    <div>
+                      <strong>Upload Photo</strong>
+                      <small>Prescription image</small>
+                    </div>
+                  </button>
+
+                  <button id="voiceCardBtn" class="quick-action" type="button">
+                    <span class="quick-icon">🎤</span>
+                    <div>
+                      <strong>Speech Input</strong>
+                      <small>Voice to text</small>
+                    </div>
+                  </button>
+
+                  <button id="manualCardBtn" class="quick-action" type="button">
+                    <span class="quick-icon">✏️</span>
+                    <div>
+                      <strong>Manual Entry</strong>
+                      <small>Fill form directly</small>
+                    </div>
+                  </button>
+                </div>
+
+                <form id="prescriptionForm" class="form-grid">
+                  <div class="form-field">
+                    <label for="patientSelect">Patient</label>
+                    <select id="patientSelect" required>
+                      <option value="">Select patient</option>
+                    </select>
+                  </div>
+
+                  <div class="form-field">
+                    <label for="doctorSelect">Doctor</label>
+                    <select id="doctorSelect">
+                      <option value="">Select doctor</option>
+                    </select>
+                  </div>
+
+                  <div class="form-field full-width">
+                    <label for="medicationName">Medication Name</label>
+                    <input
+                      id="medicationName"
+                      type="text"
+                      placeholder="e.g. Dolo 650"
+                      required
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label for="dosageForm">Dosage Form</label>
+                    <select id="dosageForm" required>
+                      <option value="tablet">tablet</option>
+                      <option value="capsule">capsule</option>
+                      <option value="liquid">liquid</option>
+                    </select>
+                  </div>
+
+                  <div class="form-field">
+                    <label for="strength">Strength</label>
+                    <input id="strength" type="text" placeholder="e.g. 500mg" />
+                  </div>
+
+                  <div class="form-field">
+                    <label for="dosage">Dosage</label>
+                    <input
+                      id="dosage"
+                      type="text"
+                      placeholder="e.g. 1 tablet"
+                      required
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label for="frequency">Frequency</label>
+                    <input
+                      id="frequency"
+                      type="text"
+                      placeholder="e.g. 2 times daily"
+                      required
+                    />
+                  </div>
+
+                  <div class="form-field">
+                    <label for="startDate">Start Date</label>
+                    <input id="startDate" type="date" required />
+                  </div>
+
+                  <div class="form-field">
+                    <label for="endDate">End Date</label>
+                    <input id="endDate" type="date" />
+                  </div>
+
+                  <div class="form-field full-width">
+                    <label for="instructions">Instructions</label>
+                    <textarea
+                      id="instructions"
+                      rows="3"
+                      placeholder="e.g. Take after breakfast"
+                    ></textarea>
+                  </div>
+
+                  <div class="form-field">
+                    <label for="scheduleTime">Schedule Time</label>
+                    <input id="scheduleTime" type="time" />
+                  </div>
+
+                  <div class="form-field">
+                    <label for="reminderType">Reminder Type</label>
+                    <select id="reminderType">
+                      <option value="in_app">in_app</option>
+                      <option value="push">push</option>
+                      <option value="sms">sms</option>
+                      <option value="email">email</option>
+                    </select>
+                  </div>
+
+                  <div class="form-field full-width">
+                    <label for="photoInput">Prescription Photo</label>
+                    <input
+                      id="photoInput"
+                      type="file"
+                      accept="image/*"
+                      hidden
+                    />
+                    <button
+                      id="uploadPhotoBtn"
+                      class="upload-box"
+                      type="button"
+                    >
+                      <span class="upload-icon">🖼️</span>
+                      <div>
+                        <strong>Choose prescription image</strong>
+                        <small id="photoStatus">No image selected</small>
+                      </div>
+                    </button>
+                    <img
+                      id="previewImage"
+                      class="preview-image hidden"
+                      alt="Prescription Preview"
+                    />
+                  </div>
+
+                  <div class="form-field full-width">
+                    <label>Speech to Text</label>
+                    <div class="voice-actions">
+                      <button
+                        id="voiceBtn"
+                        class="btn btn-primary"
+                        type="button"
+                      >
+                        🎤 Start Speaking
+                      </button>
+                      <button
+                        id="clearVoiceBtn"
+                        class="btn btn-light"
+                        type="button"
+                      >
+                        Clear Voice Text
+                      </button>
+                    </div>
+                    <small id="voiceStatus"
+                      >Speak medicine name, dosage, frequency or
+                      instructions.</small
+                    >
+                  </div>
+
+                  <div class="form-actions full-width">
+                    <button
+                      id="saveMedicationBtn"
+                      class="btn btn-light"
+                      type="button"
+                    >
+                      Save Medication Only
+                    </button>
+                    <button
+                      id="createPrescriptionBtn"
+                      class="btn btn-primary"
+                      type="submit"
+                    >
+                      Create Prescription
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <div class="right-panel">
+              <div class="panel-card">
+                <div class="panel-head">
+                  <div>
+                    <h3>Recent Prescriptions</h3>
+                    <p>Live data from backend</p>
+                  </div>
+                </div>
+                <div id="prescriptionList" class="record-list"></div>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div id="users-section" class="content-section">
+          <section class="crud-section">
+            <div class="panel-card">
+              <div class="panel-head">
+                <h3>Users Management</h3>
+                <button id="addUserBtn" class="btn btn-primary">
+                  Add User
+                </button>
+              </div>
+              <table id="usersTable" class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Active</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="userFormSection" class="crud-form hidden">
+            <div class="panel-card">
+              <div class="panel-head">
+                <h3 id="userFormTitle">Add User</h3>
+              </div>
+              <form id="userForm" class="form-grid">
+                <input type="hidden" id="userId" />
+                <div class="form-field">
+                  <label for="userEmail">Email</label>
+                  <input id="userEmail" type="email" required />
+                </div>
+                <div class="form-field">
+                  <label for="userFullName">Full Name</label>
+                  <input id="userFullName" type="text" required />
+                </div>
+                <div class="form-field">
+                  <label for="userPhone">Phone</label>
+                  <input id="userPhone" type="text" />
+                </div>
+                <div class="form-field">
+                  <label for="userDob">Date of Birth</label>
+                  <input id="userDob" type="date" />
+                </div>
+                <div class="form-field">
+                  <label for="userRole">Role</label>
+                  <select id="userRole" required>
+                    <option value="patient">Patient</option>
+                    <option value="doctor">Doctor</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label for="userActive">Active</label>
+                  <input id="userActive" type="checkbox" checked />
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary">Save</button>
+                  <button
+                    type="button"
+                    id="cancelUserBtn"
+                    class="btn btn-light"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
+        </div>
+
+        <div id="medications-section" class="content-section">
+          <section class="crud-section">
+            <div class="panel-card">
+              <div class="panel-head">
+                <h3>Medications Management</h3>
+                <button id="addMedicationBtn" class="btn btn-primary">
+                  Add Medication
+                </button>
+              </div>
+              <table id="medicationsTable" class="data-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Form</th>
+                    <th>Strength</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="medicationFormSection" class="crud-form hidden">
+            <div class="panel-card">
+              <div class="panel-head">
+                <h3 id="medicationFormTitle">Add Medication</h3>
+              </div>
+              <form id="medicationForm" class="form-grid">
+                <input type="hidden" id="medicationId" />
+                <div class="form-field">
+                  <label for="medName">Name</label>
+                  <input id="medName" type="text" required />
+                </div>
+                <div class="form-field">
+                  <label for="medForm">Dosage Form</label>
+                  <select id="medForm" required>
+                    <option value="tablet">Tablet</option>
+                    <option value="capsule">Capsule</option>
+                    <option value="liquid">Liquid</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label for="medStrength">Strength</label>
+                  <input id="medStrength" type="text" />
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary">Save</button>
+                  <button
+                    type="button"
+                    id="cancelMedicationBtn"
+                    class="btn btn-light"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
+        </div>
+
+        <div id="prescriptions-section" class="content-section">
+          <section class="crud-section">
+            <div class="panel-card">
+              <div class="panel-head">
+                <h3>Prescriptions Management</h3>
+                <button id="addPrescriptionBtn" class="btn btn-primary">
+                  Add Prescription
+                </button>
+              </div>
+              <table id="prescriptionsTable" class="data-table">
+                <thead>
+                  <tr>
+                    <th>Patient</th>
+                    <th>Doctor</th>
+                    <th>Medication</th>
+                    <th>Dosage</th>
+                    <th>Frequency</th>
+                    <th>Active</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="prescriptionFormSection" class="crud-form hidden">
+            <div class="panel-card">
+              <div class="panel-head">
+                <h3 id="prescriptionFormTitle">Add Prescription</h3>
+              </div>
+              <form id="prescriptionForm" class="form-grid">
+                <input type="hidden" id="prescriptionId" />
+                <div class="form-field">
+                  <label for="presPatient">Patient</label>
+                  <select id="presPatient" required></select>
+                </div>
+                <div class="form-field">
+                  <label for="presDoctor">Doctor</label>
+                  <select id="presDoctor"></select>
+                </div>
+                <div class="form-field">
+                  <label for="presMedication">Medication</label>
+                  <select id="presMedication" required></select>
+                </div>
+                <div class="form-field">
+                  <label for="presDosage">Dosage</label>
+                  <input id="presDosage" type="text" required />
+                </div>
+                <div class="form-field">
+                  <label for="presFrequency">Frequency</label>
+                  <input id="presFrequency" type="text" required />
+                </div>
+                <div class="form-field">
+                  <label for="presStartDate">Start Date</label>
+                  <input id="presStartDate" type="date" required />
+                </div>
+                <div class="form-field">
+                  <label for="presEndDate">End Date</label>
+                  <input id="presEndDate" type="date" />
+                </div>
+                <div class="form-field full-width">
+                  <label for="presInstructions">Instructions</label>
+                  <textarea id="presInstructions" rows="3"></textarea>
+                </div>
+                <div class="form-field">
+                  <label for="presActive">Active</label>
+                  <input id="presActive" type="checkbox" checked />
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary">Save</button>
+                  <button
+                    type="button"
+                    id="cancelPrescriptionBtn"
+                    class="btn btn-light"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
+        </div>
+
+        <div id="schedules-section" class="content-section">
+          <section class="crud-section">
+            <div class="panel-card">
+              <div class="panel-head">
+                <h3>Schedules Management</h3>
+                <button id="addScheduleBtn" class="btn btn-primary">
+                  Add Schedule
+                </button>
+              </div>
+              <table id="schedulesTable" class="data-table">
+                <thead>
+                  <tr>
+                    <th>Prescription</th>
+                    <th>Time</th>
+                    <th>Dosage Amount</th>
+                    <th>Active</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="scheduleFormSection" class="crud-form hidden">
+            <div class="panel-card">
+              <div class="panel-head">
+                <h3 id="scheduleFormTitle">Add Schedule</h3>
+              </div>
+              <form id="scheduleForm" class="form-grid">
+                <input type="hidden" id="scheduleId" />
+                <div class="form-field">
+                  <label for="schPrescription">Prescription</label>
+                  <select id="schPrescription" required></select>
+                </div>
+                <div class="form-field">
+                  <label for="schTime">Time of Day</label>
+                  <input id="schTime" type="time" required />
+                </div>
+                <div class="form-field">
+                  <label for="schDosage">Dosage Amount</label>
+                  <input id="schDosage" type="text" required />
+                </div>
+                <div class="form-field">
+                  <label for="schActive">Active</label>
+                  <input id="schActive" type="checkbox" checked />
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary">Save</button>
+                  <button
+                    type="button"
+                    id="cancelScheduleBtn"
+                    class="btn btn-light"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
+        </div>
+
+        <div id="reminders-section" class="content-section">
+          <section class="crud-section">
+            <div class="panel-card">
+              <div class="panel-head">
+                <h3>Reminders Management</h3>
+                <button id="addReminderBtn" class="btn btn-primary">
+                  Add Reminder
+                </button>
+              </div>
+              <table id="remindersTable" class="data-table">
+                <thead>
+                  <tr>
+                    <th>Patient</th>
+                    <th>Time</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="reminderFormSection" class="crud-form hidden">
+            <div class="panel-card">
+              <div class="panel-head">
+                <h3 id="reminderFormTitle">Add Reminder</h3>
+              </div>
+              <form id="reminderForm" class="form-grid">
+                <input type="hidden" id="reminderId" />
+                <div class="form-field">
+                  <label for="remSchedule">Schedule</label>
+                  <select id="remSchedule" required></select>
+                </div>
+                <div class="form-field">
+                  <label for="remPatient">Patient</label>
+                  <select id="remPatient" required></select>
+                </div>
+                <div class="form-field">
+                  <label for="remTime">Reminder Time</label>
+                  <input id="remTime" type="datetime-local" required />
+                </div>
+                <div class="form-field">
+                  <label for="remType">Type</label>
+                  <select id="remType" required>
+                    <option value="notification">Notification</option>
+                    <option value="email">Email</option>
+                    <option value="sms">SMS</option>
+                  </select>
+                </div>
+                <div class="form-field">
+                  <label for="remStatus">Status</label>
+                  <select id="remStatus" required>
+                    <option value="pending">Pending</option>
+                    <option value="sent">Sent</option>
+                    <option value="failed">Failed</option>
+                  </select>
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary">Save</button>
+                  <button
+                    type="button"
+                    id="cancelReminderBtn"
+                    class="btn btn-light"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
