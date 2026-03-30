@@ -97,3 +97,25 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
 
 CREATE TRIGGER update_prescriptions_updated_at BEFORE UPDATE ON prescriptions
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+
+-- ============================================
+-- ADHERENCE LOGS TABLE
+-- ============================================
+CREATE TABLE adherence_logs (
+    log_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    patient_id UUID NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    prescription_id UUID NOT NULL REFERENCES prescriptions(prescription_id) ON DELETE CASCADE,
+    schedule_id UUID REFERENCES medication_schedules(schedule_id) ON DELETE SET NULL,
+    scheduled_time TIMESTAMP NOT NULL,
+    actual_time TIMESTAMP,
+    status VARCHAR(50) NOT NULL CHECK (status IN ('taken', 'missed', 'skipped', 'delayed')),
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for faster queries
+CREATE INDEX idx_adherence_patient ON adherence_logs(patient_id);
+CREATE INDEX idx_adherence_prescription ON adherence_logs(prescription_id);
+CREATE INDEX idx_adherence_status ON adherence_logs(status);
+CREATE INDEX idx_adherence_scheduled_time ON adherence_logs(scheduled_time);
