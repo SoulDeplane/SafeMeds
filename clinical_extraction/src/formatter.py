@@ -1,9 +1,11 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import os
+from .validator import RulesEngine
 
 class DataFormatter:
     def __init__(self):
+        self.rules_engine = RulesEngine()
         self.freq_map = {
             "QD": "once daily", 
             "BID": "twice daily", 
@@ -24,19 +26,48 @@ class DataFormatter:
             except Exception:
                 pass
 
+    def calculate_dates(self, duration_str: str):
+        if not duration_str:
+            return None, None
+        
+        duration_str = duration_str.upper()
+        parts = duration_str.split()
+        if len(parts) >= 2:
+            try:
+                num = int(parts[0])
+                unit = parts[1]
+                
+                days = 0
+                if "DAY" in unit:
+                    days = num
+                elif "WEEK" in unit:
+                    days = num * 7
+                elif "MONTH" in unit:
+                    days = num * 30
+                    
+                start_date = datetime.now()
+                end_date = start_date + timedelta(days=days)
+                return start_date.isoformat(), end_date.isoformat()
+            except ValueError:
+                pass
+        return None, None
+
     def standardize(self, raw_data: dict):
         freq = str(raw_data.get("frequency")).upper() if raw_data.get("frequency") else None
-        if freq in self.freq_map:
+        if freq and isinstance(freq, str) and freq in self.freq_map:
             raw_data["frequency_display"] = self.freq_map[freq]
             
-        if str(raw_data.get("drug")).upper() == "LEVOTHYROXINE" and "MG" in str(raw_data.get("dosage")).upper():
-            raw_data["safety_alert"] = "POTENTIAL OVERDOSE: Levothyroxine is usually mcg, not mg."
-        
-        if str(raw_data.get("drug")).upper() == "WARFARIN":
-             raw_data["safety_alert"] = "HIGH ALERT MEDICATION: Verify INR levels."
+        alerts = self.rules_engine.validate(raw_data)
+        if alerts:
+            raw_data["safety_alert"] = " | ".join(alerts)
+             
+        duration = raw_data.get("duration")
+        if duration:
+            start_date, end_date = self.calculate_dates(duration)
+            if start_date and end_date:
+                raw_data["start_date"] = start_date
+                raw_data["end_date"] = end_date
             
-        return {
-            "timestamp": datetime.now().isoformat(),
-            "status": "validated" if not raw_data.get("safety_alert") else "flagged",
-            "data": raw_data
-        }
+        raw_data["timestamp"] = datetime.now().isoformat()
+        raw_data["status"] = "validated" if not raw_data.get("safety_alert") else "flagged"
+        return raw_data

@@ -888,8 +888,6 @@ app.put("/api/reminders/:id/status", async (req, res) => {
         error: "status must be one of: pending, sent, failed, dismissed",
       });
     }
-
-    // If status is 'sent', update sent_at timestamp
     const updateQuery =
       status === "sent"
         ? `UPDATE reminders
