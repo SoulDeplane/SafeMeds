@@ -25,7 +25,130 @@ async function connectToDatabase() {
     console.log(error);
   }
 }
-connectToDatabase();
+connectToDatabase().then(startReminderDispatcher);
+
+const VALID_REMINDER_TYPES = ["push", "sms", "email", "in_app"];
+const VALID_REMINDER_STATUSES = ["pending", "sent", "failed", "dismissed"];
+
+const normalizeReminderType = (value) => {
+  if (!value) return value;
+  const normalized = String(value).trim().toLowerCase();
+  if (normalized === "notification") return "in_app";
+  if (VALID_REMINDER_TYPES.includes(normalized)) return normalized;
+  return value;
+};
+
+const normalizeReminderStatus = (value) => {
+  if (!value) return value;
+  return String(value).trim().toLowerCase();
+};
+
+const dispatchDueReminders = async () => {
+  const result = await db.query(
+    `SELECT
+        r.*,
+        u.full_name AS patient_name,
+        u.email AS patient_email,
+        u.phone_number,
+        ms.time_of_day,
+        ms.dosage_amount,
+        p.frequency,
+        p.instructions,
+        m.medication_name
+      FROM reminders r
+      LEFT JOIN users u ON r.patient_id = u.user_id
+      LEFT JOIN medication_schedules ms ON r.schedule_id = ms.schedule_id
+      LEFT JOIN prescriptions p ON ms.prescription_id = p.prescription_id
+      LEFT JOIN medications m ON p.medication_id = m.medication_id
+      WHERE r.status = 'pending'
+        AND r.reminder_time <= NOW()
+      ORDER BY r.reminder_time ASC`,
+  );
+
+  if (result.rows.length === 0) {
+    return { total: 0, sent: [], failed: [] };
+  }
+
+  const sentReminders = [];
+  const failedReminders = [];
+
+  for (const reminder of result.rows) {
+    const reminderType = normalizeReminderType(reminder.reminder_type);
+    let nextStatus = "sent";
+    let failureReason = "";
+
+    if (!VALID_REMINDER_TYPES.includes(reminderType)) {
+      nextStatus = "failed";
+      failureReason = `invalid reminder type '${reminder.reminder_type}'`;
+    } else if (reminderType === "email" && !reminder.patient_email) {
+      nextStatus = "failed";
+      failureReason = "patient email is missing";
+    } else if (reminderType === "sms" && !reminder.phone_number) {
+      nextStatus = "failed";
+      failureReason = "patient phone number is missing";
+    }
+
+    const message =
+      `Reminder for ${reminder.patient_name || reminder.patient_id}: ${reminder.medication_name || "medication"} ${reminder.dosage_amount || ""} ${reminder.frequency || ""}`
+        .replace(/\s+/g, " ")
+        .trim();
+
+    if (nextStatus === "sent") {
+      await db.query(
+        `UPDATE reminders
+         SET status = 'sent',
+             sent_at = CURRENT_TIMESTAMP
+         WHERE reminder_id = $1`,
+        [reminder.reminder_id],
+      );
+      sentReminders.push({
+        reminder_id: reminder.reminder_id,
+        patient_name: reminder.patient_name,
+        reminder_type: reminderType,
+        reminder_time: reminder.reminder_time,
+        message,
+      });
+    } else {
+      await db.query(
+        `UPDATE reminders
+         SET status = 'failed'
+         WHERE reminder_id = $1`,
+        [reminder.reminder_id],
+      );
+      failedReminders.push({
+        reminder_id: reminder.reminder_id,
+        patient_name: reminder.patient_name,
+        reminder_type: reminderType,
+        reminder_time: reminder.reminder_time,
+        reason: failureReason,
+      });
+    }
+  }
+
+  return {
+    total: result.rows.length,
+    sent: sentReminders,
+    failed: failedReminders,
+  };
+};
+
+async function startReminderDispatcher() {
+  const intervalMs = Number(process.env.REMINDER_CHECK_INTERVAL_MS) || 60000;
+
+  const runDispatcher = async () => {
+    try {
+      await dispatchDueReminders();
+    } catch (error) {
+      console.error(
+        "[Reminder Dispatcher] Error while dispatching reminders:",
+        error,
+      );
+    }
+  };
+
+  runDispatcher();
+  setInterval(runDispatcher, intervalMs);
+}
 
 // API for Medications
 app.get("/api/medications", async (req, res) => {
@@ -691,6 +814,8 @@ app.delete("/api/schedules/:id", async (req, res) => {
 app.post("/api/reminders", async (req, res) => {
   try {
     const { schedule_id, patient_id, reminder_time, reminder_type } = req.body;
+    const status = normalizeReminderStatus(req.body.status) || "pending";
+    const normalizedType = normalizeReminderType(reminder_type);
 
     // Validation
     if (!schedule_id || !patient_id || !reminder_time || !reminder_type) {
@@ -701,22 +826,38 @@ app.post("/api/reminders", async (req, res) => {
       });
     }
 
-    // Validate reminder_type
-    const validTypes = ["push", "sms", "email", "in_app"];
-    if (!validTypes.includes(reminder_type)) {
+    if (!VALID_REMINDER_TYPES.includes(normalizedType)) {
       return res.status(400).json({
         success: false,
         error: "reminder_type must be one of: push, sms, email, in_app",
       });
     }
 
-    const result = await db.query(
-      `INSERT INTO reminders 
-       (schedule_id, patient_id, reminder_time, reminder_type, status)
-       VALUES ($1, $2, $3, $4, 'pending')
-       RETURNING *`,
-      [schedule_id, patient_id, reminder_time, reminder_type],
-    );
+    if (!VALID_REMINDER_STATUSES.includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: "status must be one of: pending, sent, failed, dismissed",
+      });
+    }
+
+    const insertQuery =
+      status === "sent"
+        ? `INSERT INTO reminders 
+           (schedule_id, patient_id, reminder_time, reminder_type, status, sent_at)
+           VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+           RETURNING *`
+        : `INSERT INTO reminders 
+           (schedule_id, patient_id, reminder_time, reminder_type, status)
+           VALUES ($1, $2, $3, $4, $5)
+           RETURNING *`;
+
+    const result = await db.query(insertQuery, [
+      schedule_id,
+      patient_id,
+      reminder_time,
+      normalizedType,
+      status,
+    ]);
 
     res.status(201).json({
       success: true,
@@ -874,6 +1015,22 @@ app.get("/api/reminders", async (req, res) => {
   }
 });
 
+// 5.5. POST - Dispatch due reminders now
+app.post("/api/reminders/dispatch", async (req, res) => {
+  try {
+    const dispatchResult = await dispatchDueReminders();
+    res.json({
+      success: true,
+      data: dispatchResult,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 // 6. PUT - Update Reminder Status (mark as sent/dismissed/failed)
 app.put("/api/reminders/:id/status", async (req, res) => {
   try {
@@ -924,26 +1081,41 @@ app.put("/api/reminders/:id/status", async (req, res) => {
 app.put("/api/reminders/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const { reminder_time, reminder_type } = req.body;
+    const { reminder_time, reminder_type, status } = req.body;
+    const normalizedType = reminder_type
+      ? normalizeReminderType(reminder_type)
+      : undefined;
+    const normalizedStatus = status
+      ? normalizeReminderStatus(status)
+      : undefined;
 
     // Validate reminder_type if provided
-    if (reminder_type) {
-      const validTypes = ["push", "sms", "email", "in_app"];
-      if (!validTypes.includes(reminder_type)) {
-        return res.status(400).json({
-          success: false,
-          error: "reminder_type must be one of: push, sms, email, in_app",
-        });
-      }
+    if (reminder_type && !VALID_REMINDER_TYPES.includes(normalizedType)) {
+      return res.status(400).json({
+        success: false,
+        error: "reminder_type must be one of: push, sms, email, in_app",
+      });
+    }
+
+    if (status && !VALID_REMINDER_STATUSES.includes(normalizedStatus)) {
+      return res.status(400).json({
+        success: false,
+        error: "status must be one of: pending, sent, failed, dismissed",
+      });
     }
 
     const result = await db.query(
       `UPDATE reminders
        SET reminder_time = COALESCE($1, reminder_time),
-           reminder_type = COALESCE($2, reminder_type)
-       WHERE reminder_id = $3
+           reminder_type = COALESCE($2, reminder_type),
+           status = COALESCE($3, status),
+           sent_at = CASE
+             WHEN COALESCE($3, status) = 'sent' AND sent_at IS NULL THEN CURRENT_TIMESTAMP
+             ELSE sent_at
+           END
+       WHERE reminder_id = $4
        RETURNING *`,
-      [reminder_time, reminder_type, id],
+      [reminder_time, normalizedType, normalizedStatus, id],
     );
 
     if (result.rows.length === 0) {
