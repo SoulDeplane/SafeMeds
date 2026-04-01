@@ -1,0 +1,1492 @@
+[
+    {
+        "drug": "CASE",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.185974",
+        "status": "validated"
+    },
+    {
+        "drug": "AMOXICILLIN",
+        "mentioned_drugs": [
+            "AMOXICILLIN"
+        ],
+        "quantity": null,
+        "strength": "500MG",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.186480",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": "1 CAP",
+        "strength": null,
+        "route": "PO",
+        "frequency": "TID",
+        "duration": "7 DAYS",
+        "frequency_display": "three times daily",
+        "start_date": "2026-03-25T22:23:29.189097",
+        "end_date": "2026-04-01T22:23:29.189097",
+        "timestamp": "2026-03-25T22:23:29.189097",
+        "status": "validated"
+    },
+    {
+        "drug": "TAKE WITH FOOD",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.192713",
+        "status": "validated"
+    },
+    {
+        "drug": "CASE",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.194409",
+        "status": "validated"
+    },
+    {
+        "drug": "IBUPROFEN",
+        "mentioned_drugs": [
+            "IBUPROFEN"
+        ],
+        "quantity": null,
+        "strength": "400MG",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.195440",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": "EVERY 6 HOURS",
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.199151",
+        "status": "validated"
+    },
+    {
+        "drug": "CASE",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.200755",
+        "status": "validated"
+    },
+    {
+        "drug": "CASE",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.201863",
+        "status": "validated"
+    },
+    {
+        "drug": "ATORVASTATIN",
+        "mentioned_drugs": [
+            "ATORVASTATIN"
+        ],
+        "quantity": null,
+        "strength": "20 MG",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.202857",
+        "status": "validated"
+    },
+    {
+        "drug": "TOTAL QTY",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.204468",
+        "status": "validated"
+    },
+    {
+        "drug": "VOICE",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.205689",
+        "status": "validated"
+    },
+    {
+        "drug": "VOICE",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.206634",
+        "status": "validated"
+    },
+    {
+        "drug": "VOICE",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.207246",
+        "status": "validated"
+    },
+    {
+        "drug": "TYPED",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.208654",
+        "status": "validated"
+    },
+    {
+        "drug": "PREDNISONE",
+        "mentioned_drugs": [
+            "PREDNISONE"
+        ],
+        "quantity": null,
+        "strength": "5MG",
+        "route": null,
+        "frequency": "QD",
+        "duration": "5 DAYS",
+        "is_taper": true,
+        "steps": [],
+        "frequency_display": "once daily",
+        "start_date": "2026-03-25T22:23:29.209769",
+        "end_date": "2026-03-30T22:23:29.209769",
+        "timestamp": "2026-03-25T22:23:29.209769",
+        "status": "validated"
+    },
+    {
+        "drug": "TYPED",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.210649",
+        "status": "validated"
+    },
+    {
+        "drug": "WARFARIN",
+        "mentioned_drugs": [
+            "WARFARIN"
+        ],
+        "quantity": "1 TAB",
+        "strength": "2MG",
+        "route": "PO",
+        "frequency": null,
+        "duration": null,
+        "safety_alert": "HIGH ALERT MEDICATION: Verify INR levels.",
+        "timestamp": "2026-03-25T22:23:29.211771",
+        "status": "flagged"
+    },
+    {
+        "drug": "TYPED",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.212762",
+        "status": "validated"
+    },
+    {
+        "drug": "LANTUS",
+        "mentioned_drugs": [
+            "LANTUS"
+        ],
+        "quantity": null,
+        "strength": "15 UNITS",
+        "route": "SUB-Q",
+        "frequency": "QHS",
+        "duration": null,
+        "frequency_display": "at bedtime",
+        "timestamp": "2026-03-25T22:23:29.214363",
+        "status": "validated"
+    },
+    {
+        "drug": "TYPED",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.215607",
+        "status": "validated"
+    },
+    {
+        "drug": "HYDROCORTISONE",
+        "mentioned_drugs": [
+            "HYDROCORTISONE"
+        ],
+        "quantity": null,
+        "strength": null,
+        "route": "TOPICAL",
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.216236",
+        "status": "validated"
+    },
+    {
+        "drug": "SUPP",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.217345",
+        "status": "validated"
+    },
+    {
+        "drug": "COMP",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.218961",
+        "status": "validated"
+    },
+    {
+        "drug": "CASEX",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.222065",
+        "status": "validated"
+    },
+    {
+        "drug": "LISINOPRILIOMG TABS",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": "BID",
+        "duration": "14 DAYS",
+        "frequency_display": "twice daily",
+        "start_date": "2026-03-25T22:23:29.227054",
+        "end_date": "2026-04-08T22:23:29.227054",
+        "timestamp": "2026-03-25T22:23:29.227054",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.232895",
+        "status": "validated"
+    },
+    {
+        "drug": "CASEX",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.236143",
+        "status": "validated"
+    },
+    {
+        "drug": "GABAPENTIN",
+        "mentioned_drugs": [
+            "GABAPENTIN"
+        ],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.237250",
+        "status": "validated"
+    },
+    {
+        "drug": "INSTRUCTION",
+        "mentioned_drugs": [],
+        "quantity": "1 CAP",
+        "strength": null,
+        "route": null,
+        "frequency": "BID",
+        "duration": "3 DAYS",
+        "is_taper": true,
+        "steps": [],
+        "frequency_display": "twice daily",
+        "start_date": "2026-03-25T22:23:29.244910",
+        "end_date": "2026-03-28T22:23:29.244910",
+        "timestamp": "2026-03-25T22:23:29.244910",
+        "status": "validated"
+    },
+    {
+        "drug": "TOTAL",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.247645",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.252069",
+        "status": "validated"
+    },
+    {
+        "drug": "CASEX",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.255302",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.259593",
+        "status": "validated"
+    },
+    {
+        "drug": "PREDNISONE",
+        "mentioned_drugs": [
+            "PREDNISONE"
+        ],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "is_taper": true,
+        "steps": [],
+        "timestamp": "2026-03-25T22:23:29.260195",
+        "status": "validated"
+    },
+    {
+        "drug": "PREDNISONE",
+        "mentioned_drugs": [
+            "PREDNISONE"
+        ],
+        "quantity": null,
+        "strength": "10MG",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.260195",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.264903",
+        "status": "validated"
+    },
+    {
+        "drug": "LOGIC",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.267284",
+        "status": "validated"
+    },
+    {
+        "drug": "HUMALOG",
+        "mentioned_drugs": [
+            "HUMALOG"
+        ],
+        "quantity": null,
+        "strength": null,
+        "route": "SUB-Q",
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.267284",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": "2 UNITS",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.270057",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": "4 UNITS",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.272098",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": "6 UNITS",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.273978",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.276941",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.278233",
+        "status": "validated"
+    },
+    {
+        "drug": "VOICEDEEP",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.279872",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.283855",
+        "status": "validated"
+    },
+    {
+        "drug": "VOICEDEEP",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.284836",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.286109",
+        "status": "validated"
+    },
+    {
+        "drug": "LASA",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.287228",
+        "status": "validated"
+    },
+    {
+        "drug": "DOSE",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": "150MG",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.289009",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": "150MG",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.298138",
+        "status": "validated"
+    },
+    {
+        "drug": "LASA",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.299132",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.300772",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.306507",
+        "status": "validated"
+    },
+    {
+        "drug": "CASEPEDS",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.308761",
+        "status": "validated"
+    },
+    {
+        "drug": "AMOXICILLIN",
+        "mentioned_drugs": [
+            "AMOXICILLIN"
+        ],
+        "quantity": "5ML",
+        "strength": "400MG",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.309902",
+        "status": "validated"
+    },
+    {
+        "drug": "GIVE",
+        "mentioned_drugs": [],
+        "quantity": "6.5 ML",
+        "strength": "6.5 ML",
+        "route": "PO",
+        "frequency": "BID",
+        "duration": "10 DAYS",
+        "frequency_display": "twice daily",
+        "start_date": "2026-03-25T22:23:29.312012",
+        "end_date": "2026-04-04T22:23:29.312012",
+        "timestamp": "2026-03-25T22:23:29.312012",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.317813",
+        "status": "validated"
+    },
+    {
+        "drug": "CASEPEDS",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": "PRN",
+        "duration": null,
+        "frequency_display": "as needed",
+        "timestamp": "2026-03-25T22:23:29.319828",
+        "status": "validated"
+    },
+    {
+        "drug": "ACETAMINOPHEN",
+        "mentioned_drugs": [
+            "ACETAMINOPHEN"
+        ],
+        "quantity": "5ML",
+        "strength": "160MG",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.320826",
+        "status": "validated"
+    },
+    {
+        "drug": "DOSE",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": "15MG",
+        "route": null,
+        "frequency": "PRN",
+        "duration": null,
+        "frequency_display": "as needed",
+        "timestamp": "2026-03-25T22:23:29.322837",
+        "status": "validated"
+    },
+    {
+        "drug": "PT WEIGHT",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.325413",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.331950",
+        "status": "validated"
+    },
+    {
+        "drug": "CASEEYE",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.336874",
+        "status": "validated"
+    },
+    {
+        "drug": "LATANOPROST",
+        "mentioned_drugs": [
+            "LATANOPROST"
+        ],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.338055",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": "QHS",
+        "duration": null,
+        "frequency_display": "at bedtime",
+        "timestamp": "2026-03-25T22:23:29.339593",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.343808",
+        "status": "validated"
+    },
+    {
+        "drug": "CASEEAR",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.345436",
+        "status": "validated"
+    },
+    {
+        "drug": "CIPRODEX OTIC",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.347462",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": "4 GTTS",
+        "route": null,
+        "frequency": "BID",
+        "duration": "7 DAYS",
+        "frequency_display": "twice daily",
+        "start_date": "2026-03-25T22:23:29.349642",
+        "end_date": "2026-04-01T22:23:29.349642",
+        "timestamp": "2026-03-25T22:23:29.349642",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.354156",
+        "status": "validated"
+    },
+    {
+        "drug": "DERM",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.356535",
+        "status": "validated"
+    },
+    {
+        "drug": "TRIAMCINOLONE",
+        "mentioned_drugs": [
+            "TRIAMCINOLONE"
+        ],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.356535",
+        "status": "validated"
+    },
+    {
+        "drug": "TOTAL QTY",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": "30G",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.358185",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.363419",
+        "status": "validated"
+    },
+    {
+        "drug": "DERM",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "is_taper": true,
+        "steps": [],
+        "timestamp": "2026-03-25T22:23:29.365237",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.367520",
+        "status": "validated"
+    },
+    {
+        "drug": "INJ",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.369139",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.372151",
+        "status": "validated"
+    },
+    {
+        "drug": "INJ",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.374665",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.378710",
+        "status": "validated"
+    },
+    {
+        "drug": "CASEX",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.380479",
+        "status": "validated"
+    },
+    {
+        "drug": "S I G",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.381486",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.385537",
+        "status": "validated"
+    },
+    {
+        "drug": "CASEX",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.387259",
+        "status": "validated"
+    },
+    {
+        "drug": "METOPROLOL",
+        "mentioned_drugs": [
+            "METOPROLOL"
+        ],
+        "quantity": null,
+        "strength": "25MG",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.388391",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": "2 TAB",
+        "strength": null,
+        "route": null,
+        "frequency": "BID",
+        "duration": "14 DAYS",
+        "frequency_display": "twice daily",
+        "start_date": "2026-03-25T22:23:29.390101",
+        "end_date": "2026-04-08T22:23:29.390101",
+        "timestamp": "2026-03-25T22:23:29.390101",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.394581",
+        "status": "validated"
+    },
+    {
+        "drug": "VOICEDEEP",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.398792",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.406356",
+        "status": "validated"
+    },
+    {
+        "drug": "VOICEDEEP",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.408874",
+        "status": "validated"
+    },
+    {
+        "drug": "HUMALOG",
+        "mentioned_drugs": [
+            "HUMALOG"
+        ],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.410288",
+        "status": "validated"
+    },
+    {
+        "drug": "LASA",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.412914",
+        "status": "validated"
+    },
+    {
+        "drug": "LEVOTHYROXINE",
+        "mentioned_drugs": [
+            "LEVOTHYROXINE"
+        ],
+        "quantity": null,
+        "strength": "125MG",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "safety_alert": "POTENTIAL OVERDOSE: Levothyroxine is usually mcg, not mg.",
+        "timestamp": "2026-03-25T22:23:29.412914",
+        "status": "flagged"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": "1 TAB",
+        "strength": null,
+        "route": null,
+        "frequency": "DAILY",
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.414926",
+        "status": "validated"
+    },
+    {
+        "drug": "LEVOTHYROXINE",
+        "mentioned_drugs": [
+            "LEVOTHYROXINE"
+        ],
+        "quantity": null,
+        "strength": "125MG",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "safety_alert": "POTENTIAL OVERDOSE: Levothyroxine is usually mcg, not mg.",
+        "timestamp": "2026-03-25T22:23:29.416441",
+        "status": "flagged"
+    },
+    {
+        "drug": "LASA",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.418952",
+        "status": "validated"
+    },
+    {
+        "drug": "PAXIL",
+        "mentioned_drugs": [
+            "PAXIL"
+        ],
+        "quantity": null,
+        "strength": "20MG",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.419974",
+        "status": "validated"
+    },
+    {
+        "drug": "FOR PARKINSON",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.421967",
+        "status": "validated"
+    },
+    {
+        "drug": "PAXIL",
+        "mentioned_drugs": [
+            "PAXIL"
+        ],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.422966",
+        "status": "validated"
+    },
+    {
+        "drug": "LOGICPRN",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.425566",
+        "status": "validated"
+    },
+    {
+        "drug": "MAXALT",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": "10MG",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.427711",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": "1 TAB",
+        "strength": null,
+        "route": "PO",
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.432733",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": "DAILY",
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.441119",
+        "status": "validated"
+    },
+    {
+        "drug": "LOGICPRN",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": "DAILY",
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.444263",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.454654",
+        "status": "validated"
+    },
+    {
+        "drug": "LOGICLAB",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.459096",
+        "status": "validated"
+    },
+    {
+        "drug": "DOSE",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": "1MG",
+        "route": "SUB-Q",
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.463197",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.475091",
+        "status": "validated"
+    },
+    {
+        "drug": "LOGICLAB",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.478860",
+        "status": "validated"
+    },
+    {
+        "drug": "CURRENT DOSE",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": "DAILY",
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.483832",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.489842",
+        "status": "validated"
+    },
+    {
+        "drug": "CAL",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.491845",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.497475",
+        "status": "validated"
+    },
+    {
+        "drug": "CAL",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.500237",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.505777",
+        "status": "validated"
+    },
+    {
+        "drug": "COMP",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.510998",
+        "status": "validated"
+    },
+    {
+        "drug": "DIPHENHYDRAMINE",
+        "mentioned_drugs": [
+            "DIPHENHYDRAMINE",
+            "LIDOCAINE"
+        ],
+        "quantity": "5ML",
+        "strength": "12.5MG",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.513186",
+        "status": "validated"
+    },
+    {
+        "drug": "SWISH AND SPIT",
+        "mentioned_drugs": [],
+        "quantity": "10ML",
+        "strength": "10ML",
+        "route": null,
+        "frequency": "PRN",
+        "duration": null,
+        "frequency_display": "as needed",
+        "timestamp": "2026-03-25T22:23:29.520143",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.532642",
+        "status": "validated"
+    },
+    {
+        "drug": "ROUTE",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.535826",
+        "status": "validated"
+    },
+    {
+        "drug": "PHENERGAN",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": "25MG",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.537536",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": "1 TAB",
+        "strength": null,
+        "route": "PO",
+        "frequency": "EVERY 6 HOURS",
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.540909",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": "PO",
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.545462",
+        "status": "validated"
+    },
+    {
+        "drug": "ROUTE",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.547435",
+        "status": "validated"
+    },
+    {
+        "drug": "SPROVATO",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": "28 MG",
+        "route": "NASAL",
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.549955",
+        "status": "validated"
+    },
+    {
+        "drug": "ADMINISTER",
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": "84 MG",
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.552471",
+        "status": "validated"
+    },
+    {
+        "drug": null,
+        "mentioned_drugs": [],
+        "quantity": null,
+        "strength": null,
+        "route": null,
+        "frequency": null,
+        "duration": null,
+        "timestamp": "2026-03-25T22:23:29.558016",
+        "status": "validated"
+    }
+]
