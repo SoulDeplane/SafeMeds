@@ -7,7 +7,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.185974",
+        "timestamp": "2026-04-04T00:32:22.944009",
         "status": "validated"
     },
     {
@@ -20,7 +20,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.186480",
+        "timestamp": "2026-04-04T00:32:22.945014",
         "status": "validated"
     },
     {
@@ -32,9 +32,9 @@
         "frequency": "TID",
         "duration": "7 DAYS",
         "frequency_display": "three times daily",
-        "start_date": "2026-03-25T22:23:29.189097",
-        "end_date": "2026-04-01T22:23:29.189097",
-        "timestamp": "2026-03-25T22:23:29.189097",
+        "start_date": "2026-04-04T00:32:22.947009",
+        "end_date": "2026-04-11T00:32:22.947009",
+        "timestamp": "2026-04-04T00:32:22.947009",
         "status": "validated"
     },
     {
@@ -45,7 +45,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.192713",
+        "timestamp": "2026-04-04T00:32:22.949064",
         "status": "validated"
     },
     {
@@ -56,7 +56,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.194409",
+        "timestamp": "2026-04-04T00:32:22.950110",
         "status": "validated"
     },
     {
@@ -69,7 +69,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.195440",
+        "timestamp": "2026-04-04T00:32:22.951110",
         "status": "validated"
     },
     {
@@ -80,7 +80,7 @@
         "route": null,
         "frequency": "EVERY 6 HOURS",
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.199151",
+        "timestamp": "2026-04-04T00:32:22.954659",
         "status": "validated"
     },
     {
@@ -91,7 +91,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.200755",
+        "timestamp": "2026-04-04T00:32:22.955659",
         "status": "validated"
     },
     {
@@ -102,7 +102,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.201863",
+        "timestamp": "2026-04-04T00:32:22.957200",
         "status": "validated"
     },
     {
@@ -115,7 +115,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.202857",
+        "timestamp": "2026-04-04T00:32:22.958243",
         "status": "validated"
     },
     {
@@ -126,7 +126,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.204468",
+        "timestamp": "2026-04-04T00:32:22.960350",
         "status": "validated"
     },
     {
@@ -137,7 +137,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.205689",
+        "timestamp": "2026-04-04T00:32:22.961393",
         "status": "validated"
     },
     {
@@ -148,7 +148,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.206634",
+        "timestamp": "2026-04-04T00:32:22.962391",
         "status": "validated"
     },
     {
@@ -159,7 +159,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.207246",
+        "timestamp": "2026-04-04T00:32:22.963392",
         "status": "validated"
     },
     {
@@ -170,7 +170,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.208654",
+        "timestamp": "2026-04-04T00:32:22.965391",
         "status": "validated"
     },
     {
@@ -186,9 +186,9 @@
         "is_taper": true,
         "steps": [],
         "frequency_display": "once daily",
-        "start_date": "2026-03-25T22:23:29.209769",
-        "end_date": "2026-03-30T22:23:29.209769",
-        "timestamp": "2026-03-25T22:23:29.209769",
+        "start_date": "2026-04-04T00:32:22.966395",
+        "end_date": "2026-04-09T00:32:22.966395",
+        "timestamp": "2026-04-04T00:32:22.966395",
         "status": "validated"
     },
     {
@@ -199,7 +199,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.210649",
+        "timestamp": "2026-04-04T00:32:22.967936",
         "status": "validated"
     },
     {
@@ -213,7 +213,7 @@
         "frequency": null,
         "duration": null,
         "safety_alert": "HIGH ALERT MEDICATION: Verify INR levels.",
-        "timestamp": "2026-03-25T22:23:29.211771",
+        "timestamp": "2026-04-04T00:32:22.970557",
         "status": "flagged"
     },
     {
@@ -224,7 +224,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.212762",
+        "timestamp": "2026-04-04T00:32:22.971570",
         "status": "validated"
     },
     {
@@ -238,7 +238,7 @@
         "frequency": "QHS",
         "duration": null,
         "frequency_display": "at bedtime",
-        "timestamp": "2026-03-25T22:23:29.214363",
+        "timestamp": "2026-04-04T00:32:22.972571",
         "status": "validated"
     },
     {
@@ -249,7 +249,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.215607",
+        "timestamp": "2026-04-04T00:32:22.974084",
         "status": "validated"
     },
     {
@@ -262,7 +262,7 @@
         "route": "TOPICAL",
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.216236",
+        "timestamp": "2026-04-04T00:32:22.976097",
         "status": "validated"
     },
     {
@@ -273,7 +273,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.217345",
+        "timestamp": "2026-04-04T00:32:22.976604",
         "status": "validated"
     },
     {
@@ -284,7 +284,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.218961",
+        "timestamp": "2026-04-04T00:32:22.979126",
         "status": "validated"
     },
     {
@@ -295,7 +295,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.222065",
+        "timestamp": "2026-04-04T00:32:22.983242",
         "status": "validated"
     },
     {
@@ -307,9 +307,9 @@
         "frequency": "BID",
         "duration": "14 DAYS",
         "frequency_display": "twice daily",
-        "start_date": "2026-03-25T22:23:29.227054",
-        "end_date": "2026-04-08T22:23:29.227054",
-        "timestamp": "2026-03-25T22:23:29.227054",
+        "start_date": "2026-04-04T00:32:22.992807",
+        "end_date": "2026-04-18T00:32:22.992807",
+        "timestamp": "2026-04-04T00:32:22.992807",
         "status": "validated"
     },
     {
@@ -320,7 +320,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.232895",
+        "timestamp": "2026-04-04T00:32:23.000317",
         "status": "validated"
     },
     {
@@ -331,7 +331,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.236143",
+        "timestamp": "2026-04-04T00:32:23.004321",
         "status": "validated"
     },
     {
@@ -344,7 +344,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.237250",
+        "timestamp": "2026-04-04T00:32:23.004321",
         "status": "validated"
     },
     {
@@ -358,9 +358,9 @@
         "is_taper": true,
         "steps": [],
         "frequency_display": "twice daily",
-        "start_date": "2026-03-25T22:23:29.244910",
-        "end_date": "2026-03-28T22:23:29.244910",
-        "timestamp": "2026-03-25T22:23:29.244910",
+        "start_date": "2026-04-04T00:32:23.010372",
+        "end_date": "2026-04-07T00:32:23.010372",
+        "timestamp": "2026-04-04T00:32:23.010372",
         "status": "validated"
     },
     {
@@ -371,7 +371,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.247645",
+        "timestamp": "2026-04-04T00:32:23.011483",
         "status": "validated"
     },
     {
@@ -382,7 +382,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.252069",
+        "timestamp": "2026-04-04T00:32:23.015489",
         "status": "validated"
     },
     {
@@ -393,7 +393,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.255302",
+        "timestamp": "2026-04-04T00:32:23.017992",
         "status": "validated"
     },
     {
@@ -404,7 +404,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.259593",
+        "timestamp": "2026-04-04T00:32:23.023609",
         "status": "validated"
     },
     {
@@ -419,7 +419,7 @@
         "duration": null,
         "is_taper": true,
         "steps": [],
-        "timestamp": "2026-03-25T22:23:29.260195",
+        "timestamp": "2026-04-04T00:32:23.024117",
         "status": "validated"
     },
     {
@@ -432,7 +432,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.260195",
+        "timestamp": "2026-04-04T00:32:23.025678",
         "status": "validated"
     },
     {
@@ -443,7 +443,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.264903",
+        "timestamp": "2026-04-04T00:32:23.034494",
         "status": "validated"
     },
     {
@@ -454,7 +454,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.267284",
+        "timestamp": "2026-04-04T00:32:23.038534",
         "status": "validated"
     },
     {
@@ -467,7 +467,7 @@
         "route": "SUB-Q",
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.267284",
+        "timestamp": "2026-04-04T00:32:23.040009",
         "status": "validated"
     },
     {
@@ -478,7 +478,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.270057",
+        "timestamp": "2026-04-04T00:32:23.043628",
         "status": "validated"
     },
     {
@@ -489,7 +489,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.272098",
+        "timestamp": "2026-04-04T00:32:23.046628",
         "status": "validated"
     },
     {
@@ -500,7 +500,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.273978",
+        "timestamp": "2026-04-04T00:32:23.050148",
         "status": "validated"
     },
     {
@@ -511,7 +511,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.276941",
+        "timestamp": "2026-04-04T00:32:23.054457",
         "status": "validated"
     },
     {
@@ -522,7 +522,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.278233",
+        "timestamp": "2026-04-04T00:32:23.061704",
         "status": "validated"
     },
     {
@@ -533,7 +533,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.279872",
+        "timestamp": "2026-04-04T00:32:23.063750",
         "status": "validated"
     },
     {
@@ -544,7 +544,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.283855",
+        "timestamp": "2026-04-04T00:32:23.072470",
         "status": "validated"
     },
     {
@@ -555,7 +555,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.284836",
+        "timestamp": "2026-04-04T00:32:23.073975",
         "status": "validated"
     },
     {
@@ -566,7 +566,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.286109",
+        "timestamp": "2026-04-04T00:32:23.077524",
         "status": "validated"
     },
     {
@@ -577,7 +577,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.287228",
+        "timestamp": "2026-04-04T00:32:23.080590",
         "status": "validated"
     },
     {
@@ -588,7 +588,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.289009",
+        "timestamp": "2026-04-04T00:32:23.083391",
         "status": "validated"
     },
     {
@@ -599,7 +599,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.298138",
+        "timestamp": "2026-04-04T00:32:23.111596",
         "status": "validated"
     },
     {
@@ -610,7 +610,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.299132",
+        "timestamp": "2026-04-04T00:32:23.113593",
         "status": "validated"
     },
     {
@@ -621,7 +621,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.300772",
+        "timestamp": "2026-04-04T00:32:23.127002",
         "status": "validated"
     },
     {
@@ -632,7 +632,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.306507",
+        "timestamp": "2026-04-04T00:32:23.141806",
         "status": "validated"
     },
     {
@@ -643,7 +643,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.308761",
+        "timestamp": "2026-04-04T00:32:23.146792",
         "status": "validated"
     },
     {
@@ -656,7 +656,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.309902",
+        "timestamp": "2026-04-04T00:32:23.147790",
         "status": "validated"
     },
     {
@@ -668,9 +668,9 @@
         "frequency": "BID",
         "duration": "10 DAYS",
         "frequency_display": "twice daily",
-        "start_date": "2026-03-25T22:23:29.312012",
-        "end_date": "2026-04-04T22:23:29.312012",
-        "timestamp": "2026-03-25T22:23:29.312012",
+        "start_date": "2026-04-04T00:32:23.151853",
+        "end_date": "2026-04-14T00:32:23.151853",
+        "timestamp": "2026-04-04T00:32:23.151853",
         "status": "validated"
     },
     {
@@ -681,7 +681,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.317813",
+        "timestamp": "2026-04-04T00:32:23.164806",
         "status": "validated"
     },
     {
@@ -693,7 +693,7 @@
         "frequency": "PRN",
         "duration": null,
         "frequency_display": "as needed",
-        "timestamp": "2026-03-25T22:23:29.319828",
+        "timestamp": "2026-04-04T00:32:23.169857",
         "status": "validated"
     },
     {
@@ -706,7 +706,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.320826",
+        "timestamp": "2026-04-04T00:32:23.171411",
         "status": "validated"
     },
     {
@@ -718,7 +718,7 @@
         "frequency": "PRN",
         "duration": null,
         "frequency_display": "as needed",
-        "timestamp": "2026-03-25T22:23:29.322837",
+        "timestamp": "2026-04-04T00:32:23.178035",
         "status": "validated"
     },
     {
@@ -729,7 +729,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.325413",
+        "timestamp": "2026-04-04T00:32:23.181885",
         "status": "validated"
     },
     {
@@ -740,7 +740,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.331950",
+        "timestamp": "2026-04-04T00:32:23.196321",
         "status": "validated"
     },
     {
@@ -751,7 +751,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.336874",
+        "timestamp": "2026-04-04T00:32:23.199791",
         "status": "validated"
     },
     {
@@ -764,7 +764,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.338055",
+        "timestamp": "2026-04-04T00:32:23.201344",
         "status": "validated"
     },
     {
@@ -776,7 +776,7 @@
         "frequency": "QHS",
         "duration": null,
         "frequency_display": "at bedtime",
-        "timestamp": "2026-03-25T22:23:29.339593",
+        "timestamp": "2026-04-04T00:32:23.203931",
         "status": "validated"
     },
     {
@@ -787,7 +787,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.343808",
+        "timestamp": "2026-04-04T00:32:23.208514",
         "status": "validated"
     },
     {
@@ -798,7 +798,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.345436",
+        "timestamp": "2026-04-04T00:32:23.211028",
         "status": "validated"
     },
     {
@@ -809,7 +809,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.347462",
+        "timestamp": "2026-04-04T00:32:23.212055",
         "status": "validated"
     },
     {
@@ -821,9 +821,9 @@
         "frequency": "BID",
         "duration": "7 DAYS",
         "frequency_display": "twice daily",
-        "start_date": "2026-03-25T22:23:29.349642",
-        "end_date": "2026-04-01T22:23:29.349642",
-        "timestamp": "2026-03-25T22:23:29.349642",
+        "start_date": "2026-04-04T00:32:23.214051",
+        "end_date": "2026-04-11T00:32:23.214051",
+        "timestamp": "2026-04-04T00:32:23.214051",
         "status": "validated"
     },
     {
@@ -834,7 +834,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.354156",
+        "timestamp": "2026-04-04T00:32:23.220176",
         "status": "validated"
     },
     {
@@ -845,7 +845,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.356535",
+        "timestamp": "2026-04-04T00:32:23.222269",
         "status": "validated"
     },
     {
@@ -858,7 +858,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.356535",
+        "timestamp": "2026-04-04T00:32:23.222269",
         "status": "validated"
     },
     {
@@ -869,7 +869,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.358185",
+        "timestamp": "2026-04-04T00:32:23.225824",
         "status": "validated"
     },
     {
@@ -880,7 +880,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.363419",
+        "timestamp": "2026-04-04T00:32:23.230853",
         "status": "validated"
     },
     {
@@ -893,7 +893,7 @@
         "duration": null,
         "is_taper": true,
         "steps": [],
-        "timestamp": "2026-03-25T22:23:29.365237",
+        "timestamp": "2026-04-04T00:32:23.231921",
         "status": "validated"
     },
     {
@@ -904,7 +904,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.367520",
+        "timestamp": "2026-04-04T00:32:23.235689",
         "status": "validated"
     },
     {
@@ -915,7 +915,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.369139",
+        "timestamp": "2026-04-04T00:32:23.239703",
         "status": "validated"
     },
     {
@@ -926,7 +926,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.372151",
+        "timestamp": "2026-04-04T00:32:23.243720",
         "status": "validated"
     },
     {
@@ -937,7 +937,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.374665",
+        "timestamp": "2026-04-04T00:32:23.246720",
         "status": "validated"
     },
     {
@@ -948,7 +948,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.378710",
+        "timestamp": "2026-04-04T00:32:23.254553",
         "status": "validated"
     },
     {
@@ -959,7 +959,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.380479",
+        "timestamp": "2026-04-04T00:32:23.258117",
         "status": "validated"
     },
     {
@@ -970,7 +970,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.381486",
+        "timestamp": "2026-04-04T00:32:23.259080",
         "status": "validated"
     },
     {
@@ -981,7 +981,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.385537",
+        "timestamp": "2026-04-04T00:32:23.264101",
         "status": "validated"
     },
     {
@@ -992,7 +992,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.387259",
+        "timestamp": "2026-04-04T00:32:23.267100",
         "status": "validated"
     },
     {
@@ -1005,7 +1005,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.388391",
+        "timestamp": "2026-04-04T00:32:23.268605",
         "status": "validated"
     },
     {
@@ -1017,9 +1017,9 @@
         "frequency": "BID",
         "duration": "14 DAYS",
         "frequency_display": "twice daily",
-        "start_date": "2026-03-25T22:23:29.390101",
-        "end_date": "2026-04-08T22:23:29.390101",
-        "timestamp": "2026-03-25T22:23:29.390101",
+        "start_date": "2026-04-04T00:32:23.271217",
+        "end_date": "2026-04-18T00:32:23.271217",
+        "timestamp": "2026-04-04T00:32:23.271217",
         "status": "validated"
     },
     {
@@ -1030,7 +1030,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.394581",
+        "timestamp": "2026-04-04T00:32:23.276922",
         "status": "validated"
     },
     {
@@ -1041,7 +1041,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.398792",
+        "timestamp": "2026-04-04T00:32:23.281095",
         "status": "validated"
     },
     {
@@ -1052,7 +1052,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.406356",
+        "timestamp": "2026-04-04T00:32:23.293159",
         "status": "validated"
     },
     {
@@ -1063,7 +1063,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.408874",
+        "timestamp": "2026-04-04T00:32:23.296123",
         "status": "validated"
     },
     {
@@ -1076,7 +1076,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.410288",
+        "timestamp": "2026-04-04T00:32:23.298121",
         "status": "validated"
     },
     {
@@ -1087,7 +1087,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.412914",
+        "timestamp": "2026-04-04T00:32:23.304143",
         "status": "validated"
     },
     {
@@ -1101,7 +1101,7 @@
         "frequency": null,
         "duration": null,
         "safety_alert": "POTENTIAL OVERDOSE: Levothyroxine is usually mcg, not mg.",
-        "timestamp": "2026-03-25T22:23:29.412914",
+        "timestamp": "2026-04-04T00:32:23.305143",
         "status": "flagged"
     },
     {
@@ -1112,7 +1112,7 @@
         "route": null,
         "frequency": "DAILY",
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.414926",
+        "timestamp": "2026-04-04T00:32:23.307657",
         "status": "validated"
     },
     {
@@ -1126,7 +1126,7 @@
         "frequency": null,
         "duration": null,
         "safety_alert": "POTENTIAL OVERDOSE: Levothyroxine is usually mcg, not mg.",
-        "timestamp": "2026-03-25T22:23:29.416441",
+        "timestamp": "2026-04-04T00:32:23.318185",
         "status": "flagged"
     },
     {
@@ -1137,7 +1137,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.418952",
+        "timestamp": "2026-04-04T00:32:23.325450",
         "status": "validated"
     },
     {
@@ -1150,7 +1150,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.419974",
+        "timestamp": "2026-04-04T00:32:23.326495",
         "status": "validated"
     },
     {
@@ -1161,7 +1161,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.421967",
+        "timestamp": "2026-04-04T00:32:23.329526",
         "status": "validated"
     },
     {
@@ -1174,7 +1174,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.422966",
+        "timestamp": "2026-04-04T00:32:23.331170",
         "status": "validated"
     },
     {
@@ -1185,7 +1185,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.425566",
+        "timestamp": "2026-04-04T00:32:23.334320",
         "status": "validated"
     },
     {
@@ -1196,7 +1196,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.427711",
+        "timestamp": "2026-04-04T00:32:23.336320",
         "status": "validated"
     },
     {
@@ -1207,7 +1207,7 @@
         "route": "PO",
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.432733",
+        "timestamp": "2026-04-04T00:32:23.341367",
         "status": "validated"
     },
     {
@@ -1218,7 +1218,7 @@
         "route": null,
         "frequency": "DAILY",
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.441119",
+        "timestamp": "2026-04-04T00:32:23.347947",
         "status": "validated"
     },
     {
@@ -1229,7 +1229,7 @@
         "route": null,
         "frequency": "DAILY",
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.444263",
+        "timestamp": "2026-04-04T00:32:23.351005",
         "status": "validated"
     },
     {
@@ -1240,7 +1240,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.454654",
+        "timestamp": "2026-04-04T00:32:23.358044",
         "status": "validated"
     },
     {
@@ -1251,7 +1251,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.459096",
+        "timestamp": "2026-04-04T00:32:23.361118",
         "status": "validated"
     },
     {
@@ -1262,7 +1262,7 @@
         "route": "SUB-Q",
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.463197",
+        "timestamp": "2026-04-04T00:32:23.364118",
         "status": "validated"
     },
     {
@@ -1273,7 +1273,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.475091",
+        "timestamp": "2026-04-04T00:32:23.369189",
         "status": "validated"
     },
     {
@@ -1284,7 +1284,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.478860",
+        "timestamp": "2026-04-04T00:32:23.372036",
         "status": "validated"
     },
     {
@@ -1295,7 +1295,7 @@
         "route": null,
         "frequency": "DAILY",
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.483832",
+        "timestamp": "2026-04-04T00:32:23.375877",
         "status": "validated"
     },
     {
@@ -1306,7 +1306,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.489842",
+        "timestamp": "2026-04-04T00:32:23.379535",
         "status": "validated"
     },
     {
@@ -1317,7 +1317,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.491845",
+        "timestamp": "2026-04-04T00:32:23.382075",
         "status": "validated"
     },
     {
@@ -1328,7 +1328,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.497475",
+        "timestamp": "2026-04-04T00:32:23.385843",
         "status": "validated"
     },
     {
@@ -1339,7 +1339,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.500237",
+        "timestamp": "2026-04-04T00:32:23.387841",
         "status": "validated"
     },
     {
@@ -1350,7 +1350,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.505777",
+        "timestamp": "2026-04-04T00:32:23.398051",
         "status": "validated"
     },
     {
@@ -1361,21 +1361,21 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.510998",
+        "timestamp": "2026-04-04T00:32:23.400222",
         "status": "validated"
     },
     {
         "drug": "DIPHENHYDRAMINE",
         "mentioned_drugs": [
-            "DIPHENHYDRAMINE",
-            "LIDOCAINE"
+            "LIDOCAINE",
+            "DIPHENHYDRAMINE"
         ],
         "quantity": "5ML",
         "strength": "12.5MG",
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.513186",
+        "timestamp": "2026-04-04T00:32:23.401131",
         "status": "validated"
     },
     {
@@ -1387,7 +1387,7 @@
         "frequency": "PRN",
         "duration": null,
         "frequency_display": "as needed",
-        "timestamp": "2026-03-25T22:23:29.520143",
+        "timestamp": "2026-04-04T00:32:23.405555",
         "status": "validated"
     },
     {
@@ -1398,7 +1398,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.532642",
+        "timestamp": "2026-04-04T00:32:23.410352",
         "status": "validated"
     },
     {
@@ -1409,7 +1409,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.535826",
+        "timestamp": "2026-04-04T00:32:23.412587",
         "status": "validated"
     },
     {
@@ -1420,7 +1420,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.537536",
+        "timestamp": "2026-04-04T00:32:23.414586",
         "status": "validated"
     },
     {
@@ -1431,7 +1431,7 @@
         "route": "PO",
         "frequency": "EVERY 6 HOURS",
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.540909",
+        "timestamp": "2026-04-04T00:32:23.416585",
         "status": "validated"
     },
     {
@@ -1442,7 +1442,7 @@
         "route": "PO",
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.545462",
+        "timestamp": "2026-04-04T00:32:23.422693",
         "status": "validated"
     },
     {
@@ -1453,7 +1453,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.547435",
+        "timestamp": "2026-04-04T00:32:23.424298",
         "status": "validated"
     },
     {
@@ -1464,7 +1464,7 @@
         "route": "NASAL",
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.549955",
+        "timestamp": "2026-04-04T00:32:23.427905",
         "status": "validated"
     },
     {
@@ -1475,7 +1475,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.552471",
+        "timestamp": "2026-04-04T00:32:23.430450",
         "status": "validated"
     },
     {
@@ -1486,7 +1486,7 @@
         "route": null,
         "frequency": null,
         "duration": null,
-        "timestamp": "2026-03-25T22:23:29.558016",
+        "timestamp": "2026-04-04T00:32:23.434302",
         "status": "validated"
     }
 ]

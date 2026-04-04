@@ -1,658 +1,457 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SafeMeds Dashboard</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <div class="app-layout">
-      <aside class="sidebar">
-        <div class="brand">
-          <div class="brand-logo">💊</div>
-          <div>
-            <h1>SafeMeds</h1>
-            <p>Medicine Reminder System</p>
-          </div>
-        </div>
 
-        <nav class="sidebar-nav">
-          <button class="nav-item active" data-section="dashboard">
-            Dashboard
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SafeMeds</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" type="text/css" href="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps.css" />
+  <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps-web.min.js"></script>
+  <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/services/services-web.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="app-container">
+    <header class="header" style="position: relative;">
+      <div id="liveClock"
+        style="position: absolute; left: 32px; font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.8rem;">🕒</span>
+        <span id="clockTime">--:--:--</span>
+      </div>
+      <h1>SafeMeds</h1>
+      <div id="google_translate_element" style="position: absolute; right: 200px; top: 16px;"></div>
+      <div style="position: absolute; right: 32px; top: 16px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+          <div id="profileBadge" class="clickable" title="My Profile" style="width: 40px; height: 40px; border-radius: 50%; background: #ffffff; color: #666; display: none; align-items: center; justify-content: center; font-size: 1.4rem; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">👤</div>
+          <button id="viewHistoryBtn" class="btn-action" style="background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.2); padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 0;">View History</button>
+      </div>
+    </header>
+
+    <div class="desktop-layout">
+      <aside class="sidebar">
+        <div class="grid-actions">
+          <button class="btn-action" id="voiceBtn">
+            <span class="icon-large">🎤</span>
+            Tap to Speak<br>(Voice)
           </button>
-          <button class="nav-item" data-section="users">Users</button>
-          <button class="nav-item" data-section="medications">
-            Medications
+          <button class="btn-action" id="scanBtn">
+            <span class="icon-large">📷</span>
+            Scan Prescription<br>(Photo)
           </button>
-          <button class="nav-item" data-section="prescriptions">
-            Prescriptions
+          <button class="btn-action" id="uploadBtn">
+            <span class="icon-large">📄</span>
+            Upload<br>PDF/DOC
           </button>
-          <button class="nav-item" data-section="schedules">Schedules</button>
-          <button class="nav-item" data-section="reminders">Reminders</button>
-        </nav>
+          <button class="btn-action" id="manualBtn">
+            <span class="icon-large">⌨️</span>
+            Type<br>Manually
+          </button>
+          <button class="btn-action" id="mapBtn" style="grid-column: span 2; background: #7D1F1F;">
+            <span class="icon-large">🗺️</span>
+            Map
+          </button>
+          <input type="file" id="fileInput" hidden accept="image/*,.pdf,.doc,.docx" />
+        </div>
       </aside>
 
-      <main class="main-content">
-        <header class="topbar">
-          <div>
-            <p class="topbar-label">Welcome back 👋</p>
-            <h2>SafeMeds Admin Dashboard</h2>
+      <main class="content">
+        <div class="view-toggles">
+          <button class="btn-view-toggle active" id="btnShowToday">Show today's medicines</button>
+          <button class="btn-view-toggle" id="btnShowAll">Show all medicines</button>
+          <button class="btn-view-toggle" id="btnShowRx">Show prescriptions</button>
+        </div>
+
+        <div class="lists-wrapper">
+          <div class="meds-container" id="todaysContainer">
+            <div class="section-title">Today's Reminders</div>
+            <div class="med-list" id="todaysList"></div>
           </div>
 
-          <div class="topbar-actions">
-            <button id="refreshBtn" class="btn btn-light" type="button">
-              Refresh Data
-            </button>
+          <div class="meds-container hidden" id="allMedsContainer">
+            <div class="section-title">All Medicines</div>
+            <div id="refillAlertsContainer"></div>
+            <div class="med-list" id="medList"></div>
           </div>
-        </header>
 
-        <div id="dashboard-section" class="content-section active">
-          <section class="stats-grid">
-            <article class="stat-box">
-              <span class="stat-title">Users Loaded</span>
-              <h3 id="usersCount">0</h3>
-              <p>Fetched from /api/users</p>
-            </article>
-
-            <article class="stat-box">
-              <span class="stat-title">Prescriptions Loaded</span>
-              <h3 id="prescriptionCount">0</h3>
-              <p>Fetched from /api/prescriptions</p>
-            </article>
-
-            <article class="stat-box">
-              <span class="stat-title">Medication Form</span>
-              <h3>Ready</h3>
-              <p>Connected to /api/medications</p>
-            </article>
-
-            <article class="stat-box">
-              <span class="stat-title">Reminder UI</span>
-              <h3>Prepared</h3>
-              <p>Ready for schedule/reminder APIs</p>
-            </article>
-          </section>
-
-          <section id="messageBox" class="message-box hidden"></section>
-
-          <section class="dashboard-grid">
-            <div class="left-panel">
-              <div class="panel-card">
-                <div class="panel-head">
-                  <div>
-                    <h3>Create Medication / Prescription</h3>
-                    <p>Aligned with your backend database and APIs</p>
-                  </div>
-                  <span class="panel-badge">Interactive Form</span>
-                </div>
-
-                <div class="quick-actions">
-                  <button id="photoCardBtn" class="quick-action" type="button">
-                    <span class="quick-icon">📷</span>
-                    <div>
-                      <strong>Upload Photo</strong>
-                      <small>Prescription image</small>
-                    </div>
-                  </button>
-
-                  <button id="voiceCardBtn" class="quick-action" type="button">
-                    <span class="quick-icon">🎤</span>
-                    <div>
-                      <strong>Speech Input</strong>
-                      <small>Voice to text</small>
-                    </div>
-                  </button>
-
-                  <button id="manualCardBtn" class="quick-action" type="button">
-                    <span class="quick-icon">✏️</span>
-                    <div>
-                      <strong>Manual Entry</strong>
-                      <small>Fill form directly</small>
-                    </div>
-                  </button>
-                </div>
-
-                <form id="prescriptionForm" class="form-grid">
-                  <div class="form-field">
-                    <label for="patientSelect">Patient</label>
-                    <select id="patientSelect" required>
-                      <option value="">Select patient</option>
-                    </select>
-                  </div>
-
-                  <div class="form-field">
-                    <label for="doctorSelect">Doctor</label>
-                    <select id="doctorSelect">
-                      <option value="">Select doctor</option>
-                    </select>
-                  </div>
-
-                  <div class="form-field full-width">
-                    <label for="medicationName">Medication Name</label>
-                    <input
-                      id="medicationName"
-                      type="text"
-                      placeholder="e.g. Dolo 650"
-                      required
-                    />
-                  </div>
-
-                  <div class="form-field">
-                    <label for="dosageForm">Dosage Form</label>
-                    <select id="dosageForm" required>
-                      <option value="tablet">tablet</option>
-                      <option value="capsule">capsule</option>
-                      <option value="liquid">liquid</option>
-                    </select>
-                  </div>
-
-                  <div class="form-field">
-                    <label for="strength">Strength</label>
-                    <input id="strength" type="text" placeholder="e.g. 500mg" />
-                  </div>
-
-                  <div class="form-field">
-                    <label for="dosage">Dosage</label>
-                    <input
-                      id="dosage"
-                      type="text"
-                      placeholder="e.g. 1 tablet"
-                      required
-                    />
-                  </div>
-
-                  <div class="form-field">
-                    <label for="frequency">Frequency</label>
-                    <input
-                      id="frequency"
-                      type="text"
-                      placeholder="e.g. 2 times daily"
-                      required
-                    />
-                  </div>
-
-                  <div class="form-field">
-                    <label for="startDate">Start Date</label>
-                    <input id="startDate" type="date" required />
-                  </div>
-
-                  <div class="form-field">
-                    <label for="endDate">End Date</label>
-                    <input id="endDate" type="date" />
-                  </div>
-
-                  <div class="form-field full-width">
-                    <label for="instructions">Instructions</label>
-                    <textarea
-                      id="instructions"
-                      rows="3"
-                      placeholder="e.g. Take after breakfast"
-                    ></textarea>
-                  </div>
-
-                  <div class="form-field">
-                    <label for="scheduleTime">Schedule Time</label>
-                    <input id="scheduleTime" type="time" />
-                  </div>
-
-                  <div class="form-field">
-                    <label for="reminderType">Reminder Type</label>
-                    <select id="reminderType">
-                      <option value="in_app">in_app</option>
-                      <option value="push">push</option>
-                      <option value="sms">sms</option>
-                      <option value="email">email</option>
-                    </select>
-                  </div>
-
-                  <div class="form-field full-width">
-                    <label for="photoInput">Prescription Photo</label>
-                    <input
-                      id="photoInput"
-                      type="file"
-                      accept="image/*"
-                      hidden
-                    />
-                    <button
-                      id="uploadPhotoBtn"
-                      class="upload-box"
-                      type="button"
-                    >
-                      <span class="upload-icon">🖼️</span>
-                      <div>
-                        <strong>Choose prescription image</strong>
-                        <small id="photoStatus">No image selected</small>
-                      </div>
-                    </button>
-                    <img
-                      id="previewImage"
-                      class="preview-image hidden"
-                      alt="Prescription Preview"
-                    />
-                  </div>
-
-                  <div class="form-field full-width">
-                    <label>Speech to Text</label>
-                    <div class="voice-actions">
-                      <button
-                        id="voiceBtn"
-                        class="btn btn-primary"
-                        type="button"
-                      >
-                        🎤 Start Speaking
-                      </button>
-                      <button
-                        id="clearVoiceBtn"
-                        class="btn btn-light"
-                        type="button"
-                      >
-                        Clear Voice Text
-                      </button>
-                    </div>
-                    <small id="voiceStatus"
-                      >Speak medicine name, dosage, frequency or
-                      instructions.</small
-                    >
-                  </div>
-
-                  <div class="form-actions full-width">
-                    <button
-                      id="saveMedicationBtn"
-                      class="btn btn-light"
-                      type="button"
-                    >
-                      Save Medication Only
-                    </button>
-                    <button
-                      id="createPrescriptionBtn"
-                      class="btn btn-primary"
-                      type="submit"
-                    >
-                      Create Prescription
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-
-            <div class="right-panel">
-              <div class="panel-card">
-                <div class="panel-head">
-                  <div>
-                    <h3>Recent Prescriptions</h3>
-                    <p>Live data from backend</p>
-                  </div>
-                </div>
-                <div id="prescriptionList" class="record-list"></div>
-              </div>
-            </div>
-          </section>
-        </div>
-
-        <div id="users-section" class="content-section">
-          <section class="crud-section">
-            <div class="panel-card">
-              <div class="panel-head">
-                <h3>Users Management</h3>
-                <button id="addUserBtn" class="btn btn-primary">
-                  Add User
-                </button>
-              </div>
-              <table id="usersTable" class="data-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Active</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </section>
-
-          <section id="userFormSection" class="crud-form hidden">
-            <div class="panel-card">
-              <div class="panel-head">
-                <h3 id="userFormTitle">Add User</h3>
-              </div>
-              <form id="userForm" class="form-grid">
-                <input type="hidden" id="userId" />
-                <div class="form-field">
-                  <label for="userEmail">Email</label>
-                  <input id="userEmail" type="email" required />
-                </div>
-                <div class="form-field">
-                  <label for="userFullName">Full Name</label>
-                  <input id="userFullName" type="text" required />
-                </div>
-                <div class="form-field">
-                  <label for="userPhone">Phone</label>
-                  <input id="userPhone" type="text" />
-                </div>
-                <div class="form-field">
-                  <label for="userDob">Date of Birth</label>
-                  <input id="userDob" type="date" />
-                </div>
-                <div class="form-field">
-                  <label for="userRole">Role</label>
-                  <select id="userRole" required>
-                    <option value="patient">Patient</option>
-                    <option value="doctor">Doctor</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-                <div class="form-field">
-                  <label for="userActive">Active</label>
-                  <input id="userActive" type="checkbox" checked />
-                </div>
-                <div class="form-actions">
-                  <button type="submit" class="btn btn-primary">Save</button>
-                  <button
-                    type="button"
-                    id="cancelUserBtn"
-                    class="btn btn-light"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </section>
-        </div>
-
-        <div id="medications-section" class="content-section">
-          <section class="crud-section">
-            <div class="panel-card">
-              <div class="panel-head">
-                <h3>Medications Management</h3>
-                <button id="addMedicationBtn" class="btn btn-primary">
-                  Add Medication
-                </button>
-              </div>
-              <table id="medicationsTable" class="data-table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Form</th>
-                    <th>Strength</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </section>
-
-          <section id="medicationFormSection" class="crud-form hidden">
-            <div class="panel-card">
-              <div class="panel-head">
-                <h3 id="medicationFormTitle">Add Medication</h3>
-              </div>
-              <form id="medicationForm" class="form-grid">
-                <input type="hidden" id="medicationId" />
-                <div class="form-field">
-                  <label for="medName">Name</label>
-                  <input id="medName" type="text" required />
-                </div>
-                <div class="form-field">
-                  <label for="medForm">Dosage Form</label>
-                  <select id="medForm" required>
-                    <option value="tablet">Tablet</option>
-                    <option value="capsule">Capsule</option>
-                    <option value="liquid">Liquid</option>
-                  </select>
-                </div>
-                <div class="form-field">
-                  <label for="medStrength">Strength</label>
-                  <input id="medStrength" type="text" />
-                </div>
-                <div class="form-actions">
-                  <button type="submit" class="btn btn-primary">Save</button>
-                  <button
-                    type="button"
-                    id="cancelMedicationBtn"
-                    class="btn btn-light"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </section>
-        </div>
-
-        <div id="prescriptions-section" class="content-section">
-          <section class="crud-section">
-            <div class="panel-card">
-              <div class="panel-head">
-                <h3>Prescriptions Management</h3>
-                <button id="addPrescriptionBtn" class="btn btn-primary">
-                  Add Prescription
-                </button>
-              </div>
-              <table id="prescriptionsTable" class="data-table">
-                <thead>
-                  <tr>
-                    <th>Patient</th>
-                    <th>Doctor</th>
-                    <th>Medication</th>
-                    <th>Dosage</th>
-                    <th>Frequency</th>
-                    <th>Active</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </section>
-
-          <section id="prescriptionFormSection" class="crud-form hidden">
-            <div class="panel-card">
-              <div class="panel-head">
-                <h3 id="prescriptionFormTitle">Add Prescription</h3>
-              </div>
-              <form id="prescriptionForm" class="form-grid">
-                <input type="hidden" id="prescriptionId" />
-                <div class="form-field">
-                  <label for="presPatient">Patient</label>
-                  <select id="presPatient" required></select>
-                </div>
-                <div class="form-field">
-                  <label for="presDoctor">Doctor</label>
-                  <select id="presDoctor"></select>
-                </div>
-                <div class="form-field">
-                  <label for="presMedication">Medication</label>
-                  <select id="presMedication" required></select>
-                </div>
-                <div class="form-field">
-                  <label for="presDosage">Dosage</label>
-                  <input id="presDosage" type="text" required />
-                </div>
-                <div class="form-field">
-                  <label for="presFrequency">Frequency</label>
-                  <input id="presFrequency" type="text" required />
-                </div>
-                <div class="form-field">
-                  <label for="presStartDate">Start Date</label>
-                  <input id="presStartDate" type="date" required />
-                </div>
-                <div class="form-field">
-                  <label for="presEndDate">End Date</label>
-                  <input id="presEndDate" type="date" />
-                </div>
-                <div class="form-field full-width">
-                  <label for="presInstructions">Instructions</label>
-                  <textarea id="presInstructions" rows="3"></textarea>
-                </div>
-                <div class="form-field">
-                  <label for="presActive">Active</label>
-                  <input id="presActive" type="checkbox" checked />
-                </div>
-                <div class="form-actions">
-                  <button type="submit" class="btn btn-primary">Save</button>
-                  <button
-                    type="button"
-                    id="cancelPrescriptionBtn"
-                    class="btn btn-light"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </section>
-        </div>
-
-        <div id="schedules-section" class="content-section">
-          <section class="crud-section">
-            <div class="panel-card">
-              <div class="panel-head">
-                <h3>Schedules Management</h3>
-                <button id="addScheduleBtn" class="btn btn-primary">
-                  Add Schedule
-                </button>
-              </div>
-              <table id="schedulesTable" class="data-table">
-                <thead>
-                  <tr>
-                    <th>Prescription</th>
-                    <th>Time</th>
-                    <th>Dosage Amount</th>
-                    <th>Active</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </section>
-
-          <section id="scheduleFormSection" class="crud-form hidden">
-            <div class="panel-card">
-              <div class="panel-head">
-                <h3 id="scheduleFormTitle">Add Schedule</h3>
-              </div>
-              <form id="scheduleForm" class="form-grid">
-                <input type="hidden" id="scheduleId" />
-                <div class="form-field">
-                  <label for="schPrescription">Prescription</label>
-                  <select id="schPrescription" required></select>
-                </div>
-                <div class="form-field">
-                  <label for="schTime">Time of Day</label>
-                  <input id="schTime" type="time" required />
-                </div>
-                <div class="form-field">
-                  <label for="schDosage">Dosage Amount</label>
-                  <input id="schDosage" type="text" required />
-                </div>
-                <div class="form-field">
-                  <label for="schActive">Active</label>
-                  <input id="schActive" type="checkbox" checked />
-                </div>
-                <div class="form-actions">
-                  <button type="submit" class="btn btn-primary">Save</button>
-                  <button
-                    type="button"
-                    id="cancelScheduleBtn"
-                    class="btn btn-light"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </section>
-        </div>
-
-        <div id="reminders-section" class="content-section">
-          <section class="crud-section">
-            <div class="panel-card">
-              <div class="panel-head">
-                <h3>Reminders Management</h3>
-                <button id="addReminderBtn" class="btn btn-primary">
-                  Add Reminder
-                </button>
-              </div>
-              <table id="remindersTable" class="data-table">
-                <thead>
-                  <tr>
-                    <th>Patient</th>
-                    <th>Time</th>
-                    <th>Type</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody></tbody>
-              </table>
-            </div>
-          </section>
-
-          <section id="reminderFormSection" class="crud-form hidden">
-            <div class="panel-card">
-              <div class="panel-head">
-                <h3 id="reminderFormTitle">Add Reminder</h3>
-              </div>
-              <form id="reminderForm" class="form-grid">
-                <input type="hidden" id="reminderId" />
-                <div class="form-field">
-                  <label for="remSchedule">Schedule</label>
-                  <select id="remSchedule" required></select>
-                </div>
-                <div class="form-field">
-                  <label for="remPatient">Patient</label>
-                  <select id="remPatient" required></select>
-                </div>
-                <div class="form-field">
-                  <label for="remTime">Reminder Time</label>
-                  <input id="remTime" type="datetime-local" required />
-                </div>
-                <div class="form-field">
-                  <label for="remType">Type</label>
-                  <select id="remType" required>
-                    <option value="notification">Notification</option>
-                    <option value="email">Email</option>
-                    <option value="sms">SMS</option>
-                  </select>
-                </div>
-                <div class="form-field">
-                  <label for="remStatus">Status</label>
-                  <select id="remStatus" required>
-                    <option value="pending">Pending</option>
-                    <option value="sent">Sent</option>
-                    <option value="failed">Failed</option>
-                  </select>
-                </div>
-                <div class="form-actions">
-                  <button type="submit" class="btn btn-primary">Save</button>
-                  <button
-                    type="button"
-                    id="cancelReminderBtn"
-                    class="btn btn-light"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            </div>
-          </section>
+          <div class="rx-container hidden" id="allRxContainer">
+            <div class="section-title">Saved Prescriptions</div>
+            <div class="med-list" id="rxList"></div>
+          </div>
         </div>
       </main>
     </div>
 
-    <script src="app.js"></script>
-  </body>
+    <div id="mapModal" class="modal">
+      <div class="modal-content" style="max-width: 850px; position: relative;">
+        <button id="closeMapBtn" class="close-btn">✖</button>
+        <h3 style="margin-top: 0;">Find Nearby Pharmacies</h3>
+
+        <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+          <div style="flex: 1; position: relative;">
+            <input type="text" id="mapLocationInput" placeholder="Enter location (e.g., Dehradun)..."
+              style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;">
+            <div id="autocompleteResults" class="autocomplete-dropdown hidden"></div>
+          </div>
+          <button id="searchMapLocBtn" class="btn-add"
+            style="margin: 0; padding: 0 20px; background: var(--btn-blue); width: auto; flex-direction: row; gap: 8px;">Search</button>
+          <button id="currentLocBtn" class="btn-action"
+            style="margin: 0; padding: 0 20px; background: var(--btn-green); width: auto; flex-direction: row; gap: 8px;">📍
+            Current Location</button>
+        </div>
+
+        <div style="display: flex; gap: 16px; height: 450px;">
+          <div id="mapContainer"
+            style="flex: 2; border-radius: 12px; border: 1px solid var(--border); background: #eee; z-index: 1;"></div>
+          <div
+            style="flex: 1; border-radius: 12px; border: 1px solid var(--border); background: var(--white); overflow-y: auto; padding: 16px;"
+            id="mapStoreList">
+            <p style="color:var(--muted); text-align:center; margin-top:50px; font-size: 0.95rem;">Enter a location or
+              use current location to find nearest medical stores.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="addRxModal" class="modal">
+      <div class="modal-content" style="max-width: 700px;">
+        <h3 id="rxModalTitle">Add New Prescription</h3>
+        <div id="rxMessageBox" class="hidden"></div>
+
+        <form id="rxForm">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="form-group">
+              <label>Patient Name</label>
+              <input type="text" id="rxPatientName" placeholder="e.g. John Doe">
+            </div>
+            <div class="form-group">
+              <label>Doctor Name</label>
+              <input type="text" id="rxDoctorName" placeholder="e.g. Dr. Smith">
+            </div>
+            <div class="form-group">
+              <label>Age</label>
+              <input type="number" id="rxAge" placeholder="e.g. 45" min="0">
+            </div>
+            <div class="form-group">
+              <label>Gender</label>
+              <select id="rxGender">
+                <option value="">Select Gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="rxDate">
+            </div>
+            <div class="form-group">
+              <label>Symptoms</label>
+              <input type="text" id="rxSymptoms" placeholder="e.g. Fever, Cough">
+            </div>
+            <div class="form-group">
+              <label>Height (cm)</label>
+              <input type="number" id="rxHeight" placeholder="e.g. 175">
+            </div>
+            <div class="form-group">
+              <label>Weight (kg)</label>
+              <input type="number" id="rxWeight" placeholder="e.g. 70">
+            </div>
+            <div class="form-group">
+              <label>Temperature (°F)</label>
+              <input type="number" id="rxTemp" step="0.1" placeholder="e.g. 98.6">
+            </div>
+          </div>
+
+          <hr style="border: 0; border-top: 1px solid var(--border); margin: 24px 0;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h4 style="margin: 0;">Medications</h4>
+            <button type="button" id="addMedRowBtn" class="btn-action"
+              style="padding: 8px 16px; font-size: 0.9rem; flex-direction: row; gap: 6px;">
+              <span>+</span> Add Medicine
+            </button>
+          </div>
+
+          <div id="medicationsContainer"></div>
+
+          <div style="display: flex; gap: 16px; margin-top: 24px;">
+            <button type="submit" class="btn-add" style="flex: 1; margin: 0; background: var(--btn-blue);">Save
+              Prescription</button>
+            <button type="button" class="btn-action" id="closeAddRxBtn"
+              style="flex: 1; padding: 16px; margin: 0; background: var(--muted);">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div id="rxDetailsModal" class="modal dark-modal">
+      <div class="modal-content rx-content">
+        <button id="closeRxDetailsBtn" class="close-btn">✖</button>
+        <div class="rx-paper" id="rxPaperContent"></div>
+      </div>
+    </div>
+
+    <div id="ringingModal" class="modal">
+      <div class="modal-content" style="max-width: 400px; text-align: center;">
+        <div style="font-size: 3.5rem; margin-bottom: 10px; animation: ring 1s infinite;">⏰</div>
+        <h3 style="margin-top: 0; color: var(--btn-blue);">Time for your Medication!</h3>
+        <div id="ringingDetails"
+          style="background: rgba(0,0,0,0.03); padding: 20px; border-radius: 12px; margin-bottom: 24px; border: 1px solid var(--border);">
+        </div>
+        <input type="hidden" id="ringingMedId">
+        <div style="display: flex; flex-direction: column; gap: 12px;">
+          <button id="ringingDoneBtn" class="btn-add" style="margin: 0; background: var(--btn-green);">✔️ I took it
+            (Done)</button>
+          <button id="ringingSkipBtn" class="btn-action" style="margin: 0; padding: 14px; background: var(--btn-red);">✖
+            Skip</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="skipModal" class="modal">
+      <div class="modal-content" style="max-width: 400px; text-align: center;">
+        <h3 style="margin-top: 0;">Skip Medication</h3>
+        <p style="color: var(--muted); font-size: 0.95rem;">Please enter the reason for skipping this medication.</p>
+        <input type="hidden" id="skipMedId">
+        <input type="text" id="skipReasonInput" placeholder="e.g. Felt nauseous, forgot, ran out..."
+          style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;">
+        <div style="display: flex; gap: 12px;">
+          <button id="confirmSkipBtn" class="btn-add" style="flex: 1; margin: 0; background: var(--btn-red);">Confirm
+            Skip</button>
+          <button id="cancelSkipBtn" class="btn-action"
+            style="flex: 1; margin: 0; background: var(--muted);">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="editMedModal" class="modal">
+      <div class="modal-content" style="max-width: 400px;">
+        <h3 style="margin-top:0;">Edit Medicine</h3>
+        <input type="hidden" id="editMedRxId">
+        <input type="hidden" id="editMedOriginalName">
+
+        <div class="form-group"><label>Medicine Name</label><input type="text" id="editMedName"></div>
+        <div class="form-group"><label>Dosage</label><input type="text" id="editMedDosage"></div>
+        <div class="form-group"><label>Frequency</label><input type="text" id="editMedFreq"></div>
+        <div class="form-group">
+          <label>Route</label>
+          <select id="editMedRoute">
+            <option value="oral">Oral</option>
+            <option value="topical">Topical</option>
+            <option value="injection">Injection</option>
+            <option value="inhaled">Inhaled</option>
+            <option value="sublingual">Sublingual</option>
+          </select>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
+          <div class="form-group"><label>Days</label><input type="number" id="editMedTimeline" min="1"></div>
+          <div class="form-group"><label>Pills</label><input type="number" id="editMedPills" min="0"></div>
+          <div class="form-group"><label>Time</label><input type="time" id="editMedTime"></div>
+        </div>
+
+        <div style="display: flex; gap: 12px; margin-top:20px;">
+          <button id="saveEditMedBtn" class="btn-add" style="flex: 1; margin: 0; background: var(--btn-blue);">Save
+            Changes</button>
+          <button id="cancelEditMedBtn" class="btn-action"
+            style="flex: 1; margin: 0; padding: 14px; background: var(--muted);">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="editRxModal" class="modal">
+      <div class="modal-content" style="max-width: 700px;">
+        <h3 style="margin-top:0;">Edit Prescription Info</h3>
+        <input type="hidden" id="editRxId">
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+          <div class="form-group"><label>Patient Name</label><input type="text" id="editRxPatient"></div>
+          <div class="form-group"><label>Doctor Name</label><input type="text" id="editRxDoctor"></div>
+          <div class="form-group"><label>Age</label><input type="number" id="editRxAge" min="0"></div>
+          <div class="form-group">
+            <label>Gender</label>
+            <select id="editRxGender">
+              <option value="">Select Gender</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group"><label>Date</label><input type="date" id="editRxDate"></div>
+          <div class="form-group"><label>Symptoms</label><input type="text" id="editRxSymptoms"></div>
+          <div class="form-group"><label>Height (cm)</label><input type="number" id="editRxHeight"></div>
+          <div class="form-group"><label>Weight (kg)</label><input type="number" id="editRxWeight"></div>
+          <div class="form-group"><label>Temperature (°F)</label><input type="number" id="editRxTemp" step="0.1"></div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border); margin: 24px 0;">
+        <h4 style="margin: 0 0 16px 0;">Edit Included Medications</h4>
+
+        <div class="form-group">
+          <label>Select Medicine to Update</label>
+          <select id="editRxMedSelect" style="background:var(--white);"></select>
+        </div>
+
+        <div id="editRxMedFields"
+          style="display:none; grid-template-columns: 1fr 1fr; gap: 12px; background: rgba(0,0,0,0.03); padding: 16px; border-radius: 12px; border: 1px solid var(--border);">
+          <div class="form-group" style="margin-bottom:0;"><label>Name</label><input type="text" id="editRxMedName">
+          </div>
+          <div class="form-group" style="margin-bottom:0;"><label>Dosage</label><input type="text" id="editRxMedDosage">
+          </div>
+          <div class="form-group" style="margin-bottom:0;"><label>Frequency</label><input type="text"
+              id="editRxMedFreq"></div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label>Route</label>
+            <select id="editRxMedRoute">
+              <option value="oral">Oral</option>
+              <option value="topical">Topical</option>
+              <option value="injection">Injection</option>
+              <option value="inhaled">Inhaled</option>
+              <option value="sublingual">Sublingual</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;"><label>Timeline</label><input type="number" id="editRxMedTimeline"></div>
+          <div class="form-group" style="margin-bottom:0;"><label>Pills</label><input type="number" id="editRxMedPills"></div>
+          <div class="form-group" style="grid-column: span 2; margin-bottom:0;"><label>Time</label><input type="time" id="editRxMedTime"></div>
+          <button type="button" id="updateRxMedBtn" class="btn-add"
+            style="grid-column: span 2; margin: 8px 0 0 0; padding: 12px; font-size: 0.95rem;">Save Medicine
+            Update</button>
+        </div>
+
+        <div style="display: flex; gap: 16px; margin-top: 24px;">
+          <button id="saveEditRxBtn" class="btn-add" style="flex: 1; margin: 0; background: var(--btn-blue);">Save All
+            Prescription Changes</button>
+          <button id="cancelEditRxBtn" class="btn-action"
+            style="flex: 1; padding: 16px; margin: 0; background: var(--muted);">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <template id="medRowTemplate">
+    <div class="med-row"
+      style="background: rgba(0,0,0,0.02); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; position: relative;">
+      <button type="button" class="btn-remove remove-med-row"
+        style="position: absolute; top: -10px; right: -10px; width: 24px; height: 24px; font-size: 0.8rem; border-radius: 50%;">✖</button>
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
+        <div class="form-group" style="margin-bottom: 8px;"><label style="font-size: 0.85rem;">Medicine
+            Name</label><input type="text" class="med-name" required placeholder="e.g. Metformin"></div>
+        <div class="form-group" style="margin-bottom: 8px;"><label style="font-size: 0.85rem;">Dosage</label><input
+            type="text" class="med-dosage" required placeholder="e.g. 500mg, 1 tablet"></div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 12px;">
+        <div class="form-group" style="margin-bottom: 0;"><label style="font-size: 0.85rem;">Frequency</label><input
+            type="text" class="med-freq" required placeholder="e.g. bid"></div>
+        <div class="form-group" style="margin-bottom: 0;"><label style="font-size: 0.85rem;">Route</label><select
+            class="med-route">
+            <option value="oral">Oral</option>
+            <option value="topical">Topical</option>
+            <option value="injection">Injection</option>
+            <option value="inhaled">Inhaled</option>
+            <option value="sublingual">Sublingual</option>
+          </select></div>
+        <div class="form-group" style="margin-bottom: 0;"><label style="font-size: 0.85rem;">Days</label><input
+            type="number" class="med-timeline" placeholder="e.g. 7" min="1"></div>
+        <div class="form-group" style="margin-bottom: 0;"><label style="font-size: 0.85rem;">Pills</label><input
+            type="number" class="med-pills" placeholder="e.g. 30" min="0"></div>
+        <div class="form-group" style="margin-bottom: 0;"><label
+            style="font-size: 0.85rem; color: var(--btn-blue);">Alarm Time</label><input type="time" class="med-time"
+            required style="border-color: var(--btn-blue);"></div>
+      </div>
+    </div>
+  </template>
+
+  <div id="onboardModal" class="modal">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <h2 style="margin-top: 0; color: var(--btn-blue);">Welcome to SafeMeds</h2>
+      <p style="color: var(--muted); font-size: 0.95rem;">Please enter your details to get started.</p>
+      <div class="form-group" style="text-align: left;">
+        <label>Your Full Name</label>
+        <input type="text" id="onboardName" placeholder="e.g. Jane Doe" required>
+      </div>
+      <div class="form-group" style="text-align: left;">
+        <label>Phone Number (Mobile)</label>
+        <input type="tel" id="onboardPhone" placeholder="e.g. +1234567890" required>
+      </div>
+      <div class="form-group" style="text-align: left; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+        <input type="checkbox" id="onboardSmsToggle" style="width: auto;">
+        <label style="margin: 0; font-size: 0.9rem;">Enable automated SMS Reminders</label>
+      </div>
+      <button id="onboardBtn" class="btn-add" style="width: 100%; margin: 0; background: var(--btn-blue);">Save Profile</button>
+    </div>
+  </div>
+
+  <div id="sideEffectModal" class="modal">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <h3 style="margin-top: 0;">Add Notes</h3>
+      <p style="color: var(--muted); font-size: 0.95rem;">Add any notes or side effects.</p>
+      <input type="hidden" id="sideEffectRxId">
+      <textarea id="sideEffectText" rows="4" placeholder="e.g. Nausea, headache, dizziness, feeling better..." 
+        style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 8px; border: 1px solid var(--border); box-sizing: border-box; resize: vertical;"></textarea>
+      <div style="display: flex; gap: 12px;">
+        <button id="saveSideEffectBtn" class="btn-add" style="flex: 1; margin: 0; background: var(--btn-blue);">Save Log</button>
+        <button id="cancelSideEffectBtn" class="btn-action" style="flex: 1; margin: 0; padding:14px; background: var(--muted);">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="historyModal" class="modal">
+    <div class="modal-content" style="max-width: 600px;">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0;">Medication History Tracker</h3>
+        <button id="closeHistoryBtn" class="btn-action" style="padding: 6px 12px; font-weight:bold; background: var(--muted);">✖</button>
+      </div>
+      <hr style="border: 0; border-top: 1px solid var(--border); margin: 16px 0;">
+      
+      <div id="historyContainer" style="max-height: 400px; overflow-y: auto; text-align: left; padding-right: 8px;">
+         <div style="text-align: center; color: var(--muted); padding: 20px;">Loading history...</div>
+      </div>
+
+      <div style="margin-top: 24px; text-align: center; border-top: 1px solid var(--border); padding-top: 16px; display: flex; justify-content: center; gap: 16px;">
+        <button id="printHistoryBtn" class="btn-action" style="background: var(--btn-blue); color: white; padding: 12px 24px;">🖨️ Print / Download History</button>
+        <button id="resetHistoryBtn" class="btn-action" style="background: var(--btn-red); color: white; padding: 12px 24px;">⚠ Reset All History</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="profileModal" class="modal">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+      <h3 style="margin-top: 0; color:var(--text-main);">My Profile</h3>
+      <p style="color: var(--muted); font-size: 0.95rem;">Manage your active account logic.</p>
+      
+      <div style="background: rgba(0,0,0,0.03); padding: 20px; border-radius: 12px; margin-bottom: 24px; border: 1px solid var(--border); text-align:left;">
+         <strong style="color:var(--text-main);">Name:</strong> <span id="profileNameDisplay"></span><br><br>
+         <strong style="color:var(--text-main);">Phone:</strong> <span id="profilePhoneDisplay"></span>
+      </div>
+
+      <div style="display: flex; gap: 12px; flex-direction:column;">
+        <button id="deleteAccountBtn" class="btn-action" style="margin: 0; padding:14px; background: var(--btn-red); font-weight:bold; color:white;">⚠️ Permanently Delete Account</button>
+        <button id="closeProfileBtn" class="btn-action" style="margin: 0; padding:14px; background: var(--muted);">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="app.js"></script>
+  <script type="text/javascript">
+    function googleTranslateElementInit() {
+      new google.translate.TranslateElement({pageLanguage: 'en', includedLanguages: 'hi,en,es,fr,de', layout: google.translate.TranslateElement.InlineLayout.SIMPLE}, 'google_translate_element');
+    }
+  </script>
+  <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+  <script>
+    function updateLiveClock() {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      const clockElement = document.getElementById('clockTime');
+      if (clockElement) clockElement.textContent = timeString;
+    }
+    setInterval(updateLiveClock, 1000);
+    updateLiveClock();
+  </script>
+</body>
+
 </html>

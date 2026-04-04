@@ -40,6 +40,7 @@ CREATE TABLE prescriptions (
     start_date DATE NOT NULL,
     end_date DATE,
     instructions TEXT,
+    total_pills INTEGER DEFAULT 0,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -109,8 +110,9 @@ CREATE TABLE adherence_logs (
     schedule_id UUID REFERENCES medication_schedules(schedule_id) ON DELETE SET NULL,
     scheduled_time TIMESTAMP NOT NULL,
     actual_time TIMESTAMP,
-    status VARCHAR(50) NOT NULL CHECK (status IN ('taken', 'missed', 'skipped', 'delayed')),
+    status VARCHAR(50) NOT NULL CHECK (status IN ('taken', 'missed', 'skipped', 'delayed', 'logged')),
     notes TEXT,
+    side_effects TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

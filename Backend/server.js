@@ -3,6 +3,14 @@ import dotenv from "dotenv";
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+import { spawn } from "child_process";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const port = 3000;
 app.use(cors());
@@ -149,6 +157,55 @@ async function startReminderDispatcher() {
   runDispatcher();
   setInterval(runDispatcher, intervalMs);
 }
+
+// API for Intelligent Extraction deeply interconnected to python module
+app.post("/api/extract", (req, res) => {
+    try {
+        const { text } = req.body;
+        if (!text) return res.status(400).json({ success: false, error: "No text to extract" });
+
+        const apiPath = path.resolve(__dirname, "../clinical_extraction/api.py");
+        const pyProcess = spawn("python", [apiPath], { shell: true });
+
+        let outputData = "";
+        let errorData = "";
+
+        pyProcess.on("error", (err) => {
+            console.error("Spawn Error:", err);
+            if (!res.headersSent) res.status(500).json({ success: false, error: "Failed to spawn python" });
+        });
+
+        pyProcess.stdout.on("data", (data) => {
+            outputData += data.toString();
+        });
+
+        pyProcess.stderr.on("data", (data) => {
+            errorData += data.toString();
+        });
+
+        pyProcess.on("close", (code) => {
+            if (code !== 0) {
+                console.error("Python Subprocess Failed:", errorData);
+                return res.status(500).json({ success: false, error: "Clinical extraction python process failed" });
+            }
+            try {
+                const responseData = JSON.parse(outputData);
+                res.json({ success: true, data: responseData });
+            } catch(e) {
+                console.error("Python IPC JSON Array Parse Error:", e, outputData);
+                res.status(500).json({ success: false, error: "Python returned unparseable syntax data" });
+            }
+        });
+
+        // Inject the payload securely via pipe
+        pyProcess.stdin.write(text);
+        pyProcess.stdin.end();
+
+    } catch(err) {
+        console.error("Extraction routing root error:", err);
+        res.status(500).json({ success: false, error: "Fatal router level processing fail" });
+    }
+});
 
 // API for Medications
 app.get("/api/medications", async (req, res) => {
@@ -445,8 +502,8 @@ app.delete("/api/users/:id", async (req, res) => {
 // API for Prescriptions
 app.get("/api/prescriptions", async (req, res) => {
   try {
-    const result = await db.query(
-      `SELECT p.*, 
+    const { patientId } = req.query;
+    let query = `SELECT p.*, 
               u.full_name as patient_name,
               d.full_name as doctor_name,
               m.medication_name,
@@ -455,9 +512,17 @@ app.get("/api/prescriptions", async (req, res) => {
        FROM prescriptions p
        LEFT JOIN users u ON p.patient_id = u.user_id
        LEFT JOIN users d ON p.doctor_id = d.user_id
-       LEFT JOIN medications m ON p.medication_id = m.medication_id
-       ORDER BY p.created_at DESC`,
-    );
+       LEFT JOIN medications m ON p.medication_id = m.medication_id`;
+    
+    let params = [];
+    if (patientId) {
+        query += ` WHERE p.patient_id = $1`;
+        params.push(patientId);
+    }
+    
+    query += ` ORDER BY p.created_at DESC`;
+
+    const result = await db.query(query, params);
     res.json({
       success: true,
       data: result.rows,
@@ -515,12 +580,13 @@ app.post("/api/prescriptions", async (req, res) => {
       start_date,
       end_date,
       instructions,
+      total_pills,
     } = req.body;
 
     const result = await db.query(
       `INSERT INTO prescriptions 
-       (patient_id, doctor_id, medication_id, dosage, frequency, start_date, end_date, instructions) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
+       (patient_id, doctor_id, medication_id, dosage, frequency, start_date, end_date, instructions, total_pills) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
        RETURNING *`,
       [
         patient_id,
@@ -531,6 +597,7 @@ app.post("/api/prescriptions", async (req, res) => {
         start_date,
         end_date,
         instructions,
+        total_pills || 0,
       ],
     );
     res.json({
@@ -549,7 +616,7 @@ app.put("/api/prescriptions/:id", async (req, res) => {
   try {
     const { id } = req.params;
     // ✅ ADD THIS LINE - extract variables from request body
-    const { dosage, frequency, start_date, end_date, instructions, is_active } =
+    const { dosage, frequency, start_date, end_date, instructions, is_active, total_pills } =
       req.body;
 
     const result = await db.query(
@@ -559,10 +626,11 @@ app.put("/api/prescriptions/:id", async (req, res) => {
            start_date = COALESCE($3, start_date),
            end_date = COALESCE($4, end_date),
            instructions = COALESCE($5, instructions),
-           is_active = COALESCE($6, is_active)
-       WHERE prescription_id = $7
+           is_active = COALESCE($6, is_active),
+           total_pills = COALESCE($7, total_pills)
+       WHERE prescription_id = $8
        RETURNING *`,
-      [dosage, frequency, start_date, end_date, instructions, is_active, id],
+      [dosage, frequency, start_date, end_date, instructions, is_active, total_pills, id],
     );
 
     if (result.rows.length === 0) {
@@ -603,6 +671,151 @@ app.delete("/api/prescriptions/:id", async (req, res) => {
       success: false,
       error: error.message,
     });
+  }
+});
+
+// PUT - Take Medication (Decrement pill counter and log adherence)
+app.put("/api/prescriptions/:id/take", async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await db.query(
+      `UPDATE prescriptions 
+       SET total_pills = GREATEST(0, total_pills - 1)
+       WHERE prescription_id = $1
+       RETURNING *`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Prescription not found" });
+    }
+
+    try {
+        const pId = result.rows[0].patient_id;
+        await db.query(`
+            INSERT INTO adherence_logs (patient_id, prescription_id, scheduled_time, actual_time, status)
+            VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'taken')
+        `, [pId, id]);
+    } catch(err) {
+        console.error("Adherence Log failed: ", err);
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// PUT - Skip Medication (Log adherence)
+app.put("/api/prescriptions/:id/skip", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    
+    // Find patient_id for the prescription
+    const pRes = await db.query('SELECT patient_id FROM prescriptions WHERE prescription_id = $1', [id]);
+    if(pRes.rows.length === 0) return res.status(404).json({ success: false, error: "Prescription not found" });
+    const pId = pRes.rows[0].patient_id;
+
+    const result = await db.query(`
+        INSERT INTO adherence_logs (patient_id, prescription_id, scheduled_time, actual_time, status, notes)
+        VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'skipped', $3)
+        RETURNING *
+    `, [pId, id, reason]);
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// POST - Log Side Effect
+app.post("/api/prescriptions/:id/side_effect", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { symptoms } = req.body;
+    
+    const pRes = await db.query('SELECT patient_id FROM prescriptions WHERE prescription_id = $1', [id]);
+    if(pRes.rows.length === 0) return res.status(404).json({ success: false, error: "Prescription not found" });
+    const pId = pRes.rows[0].patient_id;
+
+    // See if there's an adherence log for today
+    const existing = await db.query(`
+       SELECT log_id FROM adherence_logs 
+       WHERE prescription_id = $1 AND DATE(actual_time) = CURRENT_DATE
+       ORDER BY actual_time DESC LIMIT 1
+    `, [id]);
+
+    let result;
+    if(existing.rows.length > 0) {
+        // update existing
+        result = await db.query(`
+           UPDATE adherence_logs SET side_effects = $1 WHERE log_id = $2 RETURNING *
+        `, [symptoms, existing.rows[0].log_id]);
+    } else {
+        // insert new neutral 'logged' state
+        result = await db.query(`
+            INSERT INTO adherence_logs (patient_id, prescription_id, scheduled_time, actual_time, status, side_effects)
+            VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'logged', $3)
+            RETURNING *
+        `, [pId, id, symptoms]);
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// GET - History
+app.get("/api/history/:patientId", async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const result = await db.query(`
+       SELECT 
+         a.log_id, a.actual_time, a.status, a.notes, a.side_effects,
+         m.medication_name, p.dosage, m.dosage_form as route
+       FROM adherence_logs a
+       LEFT JOIN prescriptions p ON a.prescription_id = p.prescription_id
+       LEFT JOIN medications m ON p.medication_id = m.medication_id
+       WHERE a.patient_id = $1
+       ORDER BY a.actual_time DESC
+    `, [patientId]);
+    
+    // Grouping day wise directly in Node
+    const grouped = {};
+    for(let row of result.rows) {
+        const d = new Date(row.actual_time);
+        const dateKey = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+        const timeKey = d.toLocaleTimeString('en-US', { hour: '2-digit', minute:'2-digit' });
+        
+        if(!grouped[dateKey]) grouped[dateKey] = [];
+        grouped[dateKey].push({
+            time: timeKey,
+            medication: row.medication_name,
+            dosage: row.dosage || '-',
+            route: row.route || '-',
+            status: row.status,
+            reason: row.notes || '-',
+            notes: row.side_effects || '-'
+        });
+    }
+
+    res.json({ success: true, data: grouped });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// DELETE - Wipe history
+app.delete("/api/history/:patientId", async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    await db.query(`DELETE FROM adherence_logs WHERE patient_id = $1`, [patientId]);
+    res.json({ success: true, message: "History cleared successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -716,11 +929,11 @@ app.get("/api/schedules/:id", async (req, res) => {
   }
 });
 
-// 4. GET - All Schedules (GENERAL ROUTE - COMES LAST)
+// 4. GET - All Schedules (GENERAL ROUTE - OPTIONAL PATIENT FILTER)
 app.get("/api/schedules", async (req, res) => {
   try {
-    const result = await db.query(
-      `SELECT 
+    const { patientId } = req.query;
+    let query = `SELECT 
          ms.*,
          p.dosage as prescription_dosage,
          p.frequency,
@@ -729,9 +942,17 @@ app.get("/api/schedules", async (req, res) => {
        FROM medication_schedules ms
        LEFT JOIN prescriptions p ON ms.prescription_id = p.prescription_id
        LEFT JOIN users u ON p.patient_id = u.user_id
-       LEFT JOIN medications m ON p.medication_id = m.medication_id
-       ORDER BY ms.time_of_day ASC`,
-    );
+       LEFT JOIN medications m ON p.medication_id = m.medication_id`;
+    
+    let params = [];
+    if (patientId) {
+        query += ` WHERE p.patient_id = $1`;
+        params.push(patientId);
+    }
+
+    query += ` ORDER BY ms.time_of_day ASC`;
+
+    const result = await db.query(query, params);
 
     res.json({
       success: true,
