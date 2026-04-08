@@ -52,7 +52,7 @@ body {
   background: var(--header-bg);
   color: var(--white);
   padding: 16px 32px;
-  min-height: 100px;
+  min-height: 105px;
   display: flex;
   justify-content: center;
   align-items: center;
