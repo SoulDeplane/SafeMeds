@@ -64,6 +64,8 @@ let recognition = null;
 let isListening = false;
 let prescriptions = [];
 let todaysReminders = [];
+let lastFetchedHistory = null;
+let lowMedNotified = new Set();
 const toast = document.getElementById("toast");
 
 function showToast(message, type = "success") {
@@ -158,9 +160,14 @@ async function loadServerData() {
     const u = JSON.parse(uData);
     const rxResp = await fetch(`${API_BASE}/prescriptions?patientId=${u.id}`);
     const schResp = await fetch(`${API_BASE}/schedules?patientId=${u.id}`);
-    if (!rxResp.ok || !schResp.ok) return;
+    const histResp = await fetch(`${API_BASE}/history/${u.id}`);
+    
+    if (!rxResp.ok || !schResp.ok || !histResp.ok) return;
+    
     const rxData = await rxResp.json();
     const schData = await schResp.json();
+    const histData = await histResp.json();
+
     const groupedMap = new Map();
     rxData.data.forEach(p => {
       let safeDate = p.start_date ? p.start_date.split('T')[0] : 'Unknown';
@@ -205,7 +212,10 @@ async function loadServerData() {
       });
     });
     prescriptions = Array.from(groupedMap.values());
+    lastFetchedHistory = histData.data;
+    
     generateTodaysReminders();
+    
     if (btnShowToday.classList.contains('active')) renderTodays();
     else if (btnShowAll.classList.contains('active')) renderAllMeds();
     else renderPrescriptions();
@@ -224,6 +234,9 @@ let triggeredToday = new Set();
 
 function generateTodaysReminders() {
   const allMeds = getAllMedications();
+  const todayKey = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  const todaysHistory = lastFetchedHistory ? lastFetchedHistory[todayKey] || [] : [];
+
   allMeds.forEach((med, index) => {
     const remId = `${med.serverSchId}`;
     const existing = todaysReminders.find(r => r.id === remId);
@@ -234,6 +247,16 @@ function generateTodaysReminders() {
     let h12 = H % 12 || 12;
     let displayTime = `${h12.toString().padStart(2, '0')}:${m} ${ampm}`;
     const dailyReq = allMeds.filter(m => m.serverRxId === med.serverRxId).length;
+
+    // Check if this specific medication and time was already logged today
+    // Note: This is a simple heuristic based on medication name and time
+    const historyEntry = todaysHistory.find(h => 
+      h.medication.toLowerCase() === med.name.toLowerCase() && 
+      h.time.replace(/^0/, '') === displayTime.replace(/^0/, '')
+    );
+
+    const initialStatus = historyEntry ? historyEntry.status : "pending";
+    const initialReason = historyEntry ? historyEntry.reason : "";
 
     if (!existing) {
       todaysReminders.push({
@@ -248,8 +271,8 @@ function generateTodaysReminders() {
         pills: med.pills || 0,
         dailyRequirement: dailyReq,
         icon: H < 12 ? "☀️" : (H < 18 ? "🕒" : "🌙"),
-        status: "pending",
-        skipReason: ""
+        status: initialStatus,
+        skipReason: initialReason
       });
     } else {
       existing.serverRxId = med.serverRxId;
@@ -262,6 +285,11 @@ function generateTodaysReminders() {
       existing.pills = med.pills || 0;
       existing.dailyRequirement = dailyReq;
       existing.icon = H < 12 ? "☀️" : (H < 18 ? "🕒" : "🌙");
+      // Only set status if it's currently pending (don't overwrite local UI state if already changed)
+      if (existing.status === "pending") {
+        existing.status = initialStatus;
+        existing.skipReason = initialReason;
+      }
     }
   });
   const prescribedIds = allMeds.map((med) => `${med.serverSchId}`);
@@ -698,17 +726,28 @@ function renderTodays() {
     let statusIcon = "";
     let actions = "";
     if (rem.status === "taken") {
-      statusIcon = `<span style="color: var(--btn-green); font-size: 1.5rem;">✔️</span>`;
+      statusIcon = `
+        <div style="background: rgba(16, 185, 129, 0.1); padding: 8px 12px; border-radius: 12px; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(16, 185, 129, 0.2);">
+          <span style="color: #10B981; font-size: 1.2rem; font-weight: bold;">✓</span>
+          <span style="color: #065F46; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Taken</span>
+        </div>
+      `;
     } else if (rem.status === "skipped") {
       statusIcon = `
-        <div style="text-align:right;">
-          <span style="color: var(--btn-red); font-size: 1.2rem;">✖</span>
-          <div style="font-size:0.75rem; color:var(--text-light); margin-top:4px;">${rem.skipReason}</div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px;">
+          <div style="background: rgba(239, 68, 68, 0.1); padding: 8px 12px; border-radius: 12px; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(239, 68, 68, 0.2);">
+            <span style="color: #EF4444; font-size: 1.2rem; font-weight: bold;">✕</span>
+            <span style="color: #991B1B; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Skipped</span>
+          </div>
+          <div style="font-size:0.75rem; color: #7F1D1D; font-style: italic; max-width: 150px; text-align: right;">"${rem.skipReason}"</div>
         </div>
       `;
     } else {
       actions = `
-        <button class="btn-small btn-primary" onclick="triggerAlarm('${rem.id}')">Simulate Alarm</button>
+        <div style="background: rgba(59, 130, 246, 0.1); padding: 8px 12px; border-radius: 12px; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(59, 130, 246, 0.2);">
+          <span style="color: #3B82F6; font-size: 1rem;">🕒</span>
+          <span style="color: #1E40AF; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Scheduled</span>
+        </div>
       `;
     }
     const colors = ['bg-teal', 'bg-blue', 'bg-orange'];
@@ -736,9 +775,21 @@ function renderAllMeds() {
     document.getElementById("refillAlertsContainer").innerHTML = "";
     return;
   }
-  const lowMeds = meds.filter(m => m.pills <= 5);
+  const lowMeds = meds.filter(m => m.pills <= 3);
   const alertsContainer = document.getElementById("refillAlertsContainer");
   if (lowMeds.length > 0) {
+    lowMeds.forEach(m => {
+      const notifyKey = `${m.serverRxId}_${m.pills}`;
+      if (!lowMedNotified.has(notifyKey)) {
+        if ("Notification" in window && Notification.permission === "granted") {
+           new Notification("SafeMeds Low Stock Alert", {
+             body: `Only ${m.pills} pills remaining for ${m.name}. Please request a refill.`,
+             icon: 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png'
+           });
+           lowMedNotified.add(notifyKey);
+        }
+      }
+    });
     alertsContainer.innerHTML = lowMeds.map(m => `
        <div style="background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 8px; padding: 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
          <div>
@@ -768,7 +819,7 @@ function renderAllMeds() {
             Time: ${med.time || '-'} | Route: ${med.route}
         </div>
         <div class="med-subtitle" style="font-size: 0.8rem;">
-           <span style="color: ${med.pills <= 5 ? 'var(--btn-red)' : 'var(--btn-teal)'}; font-weight: 600;">
+           <span style="color: ${med.pills <= 3 ? 'var(--btn-red)' : 'var(--btn-teal)'}; font-weight: 600;">
              ${med.pills || 0} pills left
            </span>
         </div>

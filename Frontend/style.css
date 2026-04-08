@@ -129,7 +129,7 @@ body {
   flex-shrink: 0;
 }
 
-/* Dynamic adjustment when Google Translate bar is present */
+
 .translated-ltr .map-sidebar,
 .translated-rtl .map-sidebar {
   height: calc(100vh - 145px) !important;
