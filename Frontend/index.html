@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SafeMeds</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" type="text/css" href="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps.css" />
   <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps-web.min.js"></script>
   <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/services/services-web.min.js"></script>
@@ -17,16 +17,27 @@
 <body>
   <div class="app-container">
     <header class="header" style="position: relative;">
-      <div id="liveClock"
-        style="position: absolute; left: 32px; font-size: 1.5rem; font-weight: 700; display: flex; align-items: center; gap: 10px;">
-        <span style="font-size: 1.8rem;">🕒</span>
-        <span id="clockTime">--:--:--</span>
-      </div>
       <h1>SafeMeds</h1>
-      <div id="google_translate_element" style="position: absolute; right: 200px; top: 16px;"></div>
-      <div style="position: absolute; right: 32px; top: 16px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
-          <div id="profileBadge" class="clickable" title="My Profile" style="width: 40px; height: 40px; border-radius: 50%; background: #ffffff; color: #666; display: none; align-items: center; justify-content: center; font-size: 1.4rem; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">👤</div>
-          <button id="viewHistoryBtn" class="btn-action" style="background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.2); padding: 10px 16px; border-radius: 8px; font-weight: bold; cursor: pointer; margin: 0;">View History</button>
+      <div id="google_translate_element"
+        style="position: absolute; width: 0; height: 0; overflow: hidden; opacity: 0; pointer-events: none;"></div>
+      <button id="customLanguageBtn">
+        <span>🌐</span> Choose Language
+      </button>
+      <div id="languagePopup">
+        <button class="lang-option" data-lang="en">English</button>
+        <button class="lang-option" data-lang="hi">Hindi</button>
+        <button class="lang-option" data-lang="es">Spanish</button>
+        <button class="lang-option" data-lang="fr">French</button>
+        <button class="lang-option" data-lang="de">German</button>
+      </div>
+      <div
+        style="position: absolute; left: 32px; top: 16px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+        <div id="profileBadge" class="clickable" title="My Profile"
+          style="width: 40px; height: 40px; border-radius: 50%; background: #ffffff; color: #666; display: none; align-items: center; justify-content: center; font-size: 1.4rem; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">
+          👤</div>
+        <button id="viewHistoryBtn" class="btn-small btn-secondary"
+          style="background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.2); margin: 0;">View
+          History</button>
       </div>
     </header>
 
@@ -35,91 +46,90 @@
         <div class="grid-actions">
           <button class="btn-action" id="voiceBtn">
             <span class="icon-large">🎤</span>
-            Tap to Speak<br>(Voice)
+            Voice Transcription
           </button>
           <button class="btn-action" id="scanBtn">
             <span class="icon-large">📷</span>
-            Scan Prescription<br>(Photo)
+            Scan Rx
           </button>
           <button class="btn-action" id="uploadBtn">
             <span class="icon-large">📄</span>
-            Upload<br>PDF/DOC
+            Upload Document
           </button>
           <button class="btn-action" id="manualBtn">
             <span class="icon-large">⌨️</span>
-            Type<br>Manually
+            Type Manually
           </button>
-          <button class="btn-action" id="mapBtn" style="grid-column: span 2; background: #7D1F1F;">
-            <span class="icon-large">🗺️</span>
-            Map
-          </button>
-          <input type="file" id="fileInput" hidden accept="image/*,.pdf,.doc,.docx" />
         </div>
+
+        <input type="file" id="fileInput" hidden accept="image/*,.pdf,.doc,.docx" />
       </aside>
 
       <main class="content">
         <div class="view-toggles">
-          <button class="btn-view-toggle active" id="btnShowToday">Show today's medicines</button>
-          <button class="btn-view-toggle" id="btnShowAll">Show all medicines</button>
-          <button class="btn-view-toggle" id="btnShowRx">Show prescriptions</button>
+          <button class="btn-view-toggle active" id="btnShowToday">Today's Reminders</button>
+          <button class="btn-view-toggle" id="btnShowAll">Medicines</button>
+          <button class="btn-view-toggle" id="btnShowRx">Prescriptions</button>
         </div>
 
         <div class="lists-wrapper">
           <div class="meds-container" id="todaysContainer">
-            <div class="section-title">Today's Reminders</div>
             <div class="med-list" id="todaysList"></div>
           </div>
 
           <div class="meds-container hidden" id="allMedsContainer">
-            <div class="section-title">All Medicines</div>
             <div id="refillAlertsContainer"></div>
             <div class="med-list" id="medList"></div>
           </div>
 
           <div class="rx-container hidden" id="allRxContainer">
-            <div class="section-title">Saved Prescriptions</div>
             <div class="med-list" id="rxList"></div>
           </div>
         </div>
       </main>
-    </div>
 
-    <div id="mapModal" class="modal">
-      <div class="modal-content" style="max-width: 850px; position: relative;">
-        <button id="closeMapBtn" class="close-btn">✖</button>
-        <h3 style="margin-top: 0;">Find Nearby Pharmacies</h3>
-
-        <div style="display: flex; gap: 12px; margin-bottom: 16px;">
-          <div style="flex: 1; position: relative;">
+      <aside id="mapSidebar" class="map-sidebar" style="height: calc(100vh - 100px); overflow: hidden;">
+        <div
+          style="display: flex; justify-content: center; align-items: center; margin-bottom: 12px; position: relative;">
+          <h3 style="margin: 0; font-size: 1.2rem; color: var(--text-main);">Find Nearby Pharmacies</h3>
+          <button id="expandMapBtn" title="Expand Map"
+            style="background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--muted); padding: 0; position: absolute; right: 0;">⤢</button>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; flex-shrink: 0;">
+          <div style="position: relative; width: 100%;">
             <input type="text" id="mapLocationInput" placeholder="Enter location (e.g., Dehradun)..."
-              style="width: 100%; padding: 12px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;">
+              style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box;">
             <div id="autocompleteResults" class="autocomplete-dropdown hidden"></div>
           </div>
-          <button id="searchMapLocBtn" class="btn-add"
-            style="margin: 0; padding: 0 20px; background: var(--btn-blue); width: auto; flex-direction: row; gap: 8px;">Search</button>
-          <button id="currentLocBtn" class="btn-action"
-            style="margin: 0; padding: 0 20px; background: var(--btn-green); width: auto; flex-direction: row; gap: 8px;">📍
-            Current Location</button>
-        </div>
-
-        <div style="display: flex; gap: 16px; height: 450px;">
-          <div id="mapContainer"
-            style="flex: 2; border-radius: 12px; border: 1px solid var(--border); background: #eee; z-index: 1;"></div>
-          <div
-            style="flex: 1; border-radius: 12px; border: 1px solid var(--border); background: var(--white); overflow-y: auto; padding: 16px;"
-            id="mapStoreList">
-            <p style="color:var(--muted); text-align:center; margin-top:50px; font-size: 0.95rem;">Enter a location or
-              use current location to find nearest medical stores.</p>
+          <div style="display: flex; gap: 8px;">
+            <button id="searchMapLocBtn" class="btn-primary btn-small"
+              style="flex: 1; height: 38px; display: flex; align-items: center; justify-content: center; gap: 6px;">Search</button>
+            <button id="currentLocBtn" class="btn-add btn-small"
+              style="flex: 1; height: 38px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--btn-green);">📍
+              Current</button>
           </div>
         </div>
-      </div>
+
+        <div class="map-layout-horizontal"
+          style="display: flex; gap: 16px; flex: 1; min-height: 0; overflow: hidden; margin-bottom: 8px;">
+          <div id="mapContainer"
+            style="flex: 2; border-radius: 12px; border: 1px solid var(--border); background: #eee; z-index: 1;"></div>
+
+          <div id="mapStoreList"
+            style="flex: 1; border-radius: 12px; border: 1px solid var(--border); background: var(--white); overflow-y: auto; padding: 16px;">
+            <p style="color:var(--muted); text-align:center; margin-top:50px; font-size: 0.9rem;">Enter a location or
+              current location to find medical stores.</p>
+          </div>
+        </div>
+      </aside>
     </div>
+
+
 
     <div id="addRxModal" class="modal">
       <div class="modal-content" style="max-width: 700px;">
         <h3 id="rxModalTitle">Add New Prescription</h3>
         <div id="rxMessageBox" class="hidden"></div>
-
         <form id="rxForm">
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
             <div class="form-group">
@@ -164,23 +174,17 @@
               <input type="number" id="rxTemp" step="0.1" placeholder="e.g. 98.6">
             </div>
           </div>
-
           <hr style="border: 0; border-top: 1px solid var(--border); margin: 24px 0;">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <h4 style="margin: 0;">Medications</h4>
-            <button type="button" id="addMedRowBtn" class="btn-action"
-              style="padding: 8px 16px; font-size: 0.9rem; flex-direction: row; gap: 6px;">
-              <span>+</span> Add Medicine
-            </button>
+            <button type="button" id="addMedRowBtn" class="btn-small btn-secondary" style="font-size: 0.9rem;">+ Add
+              Medicine</button>
           </div>
-
           <div id="medicationsContainer"></div>
-
           <div style="display: flex; gap: 16px; margin-top: 24px;">
-            <button type="submit" class="btn-add" style="flex: 1; margin: 0; background: var(--btn-blue);">Save
-              Prescription</button>
-            <button type="button" class="btn-action" id="closeAddRxBtn"
-              style="flex: 1; padding: 16px; margin: 0; background: var(--muted);">Cancel</button>
+            <button type="submit" class="btn-add" style="flex: 1; margin: 0;">Save Prescription</button>
+            <button type="button" class="btn-small btn-secondary" id="closeAddRxBtn"
+              style="flex: 1; padding: 16px; margin: 0;">Cancel</button>
           </div>
         </form>
       </div>
@@ -204,7 +208,7 @@
         <div style="display: flex; flex-direction: column; gap: 12px;">
           <button id="ringingDoneBtn" class="btn-add" style="margin: 0; background: var(--btn-green);">✔️ I took it
             (Done)</button>
-          <button id="ringingSkipBtn" class="btn-action" style="margin: 0; padding: 14px; background: var(--btn-red);">✖
+          <button id="ringingSkipBtn" class="btn-add" style="margin: 0; padding: 14px; background: var(--btn-red);">✖
             Skip</button>
         </div>
       </div>
@@ -220,8 +224,8 @@
         <div style="display: flex; gap: 12px;">
           <button id="confirmSkipBtn" class="btn-add" style="flex: 1; margin: 0; background: var(--btn-red);">Confirm
             Skip</button>
-          <button id="cancelSkipBtn" class="btn-action"
-            style="flex: 1; margin: 0; background: var(--muted);">Cancel</button>
+          <button id="cancelSkipBtn" class="btn-small btn-secondary"
+            style="flex: 1; margin: 0; padding: 14px;">Cancel</button>
         </div>
       </div>
     </div>
@@ -231,7 +235,6 @@
         <h3 style="margin-top:0;">Edit Medicine</h3>
         <input type="hidden" id="editMedRxId">
         <input type="hidden" id="editMedOriginalName">
-
         <div class="form-group"><label>Medicine Name</label><input type="text" id="editMedName"></div>
         <div class="form-group"><label>Dosage</label><input type="text" id="editMedDosage"></div>
         <div class="form-group"><label>Frequency</label><input type="text" id="editMedFreq"></div>
@@ -250,12 +253,10 @@
           <div class="form-group"><label>Pills</label><input type="number" id="editMedPills" min="0"></div>
           <div class="form-group"><label>Time</label><input type="time" id="editMedTime"></div>
         </div>
-
         <div style="display: flex; gap: 12px; margin-top:20px;">
-          <button id="saveEditMedBtn" class="btn-add" style="flex: 1; margin: 0; background: var(--btn-blue);">Save
-            Changes</button>
-          <button id="cancelEditMedBtn" class="btn-action"
-            style="flex: 1; margin: 0; padding: 14px; background: var(--muted);">Cancel</button>
+          <button id="saveEditMedBtn" class="btn-add" style="flex: 1; margin: 0;">Save Changes</button>
+          <button id="cancelEditMedBtn" class="btn-small btn-secondary"
+            style="flex: 1; margin: 0; padding: 14px;">Cancel</button>
         </div>
       </div>
     </div>
@@ -264,7 +265,6 @@
       <div class="modal-content" style="max-width: 700px;">
         <h3 style="margin-top:0;">Edit Prescription Info</h3>
         <input type="hidden" id="editRxId">
-
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
           <div class="form-group"><label>Patient Name</label><input type="text" id="editRxPatient"></div>
           <div class="form-group"><label>Doctor Name</label><input type="text" id="editRxDoctor"></div>
@@ -284,15 +284,12 @@
           <div class="form-group"><label>Weight (kg)</label><input type="number" id="editRxWeight"></div>
           <div class="form-group"><label>Temperature (°F)</label><input type="number" id="editRxTemp" step="0.1"></div>
         </div>
-
         <hr style="border: 0; border-top: 1px solid var(--border); margin: 24px 0;">
         <h4 style="margin: 0 0 16px 0;">Edit Included Medications</h4>
-
         <div class="form-group">
           <label>Select Medicine to Update</label>
           <select id="editRxMedSelect" style="background:var(--white);"></select>
         </div>
-
         <div id="editRxMedFields"
           style="display:none; grid-template-columns: 1fr 1fr; gap: 12px; background: rgba(0,0,0,0.03); padding: 16px; border-radius: 12px; border: 1px solid var(--border);">
           <div class="form-group" style="margin-bottom:0;"><label>Name</label><input type="text" id="editRxMedName">
@@ -311,30 +308,30 @@
               <option value="sublingual">Sublingual</option>
             </select>
           </div>
-          <div class="form-group" style="margin-bottom:0;"><label>Timeline</label><input type="number" id="editRxMedTimeline"></div>
-          <div class="form-group" style="margin-bottom:0;"><label>Pills</label><input type="number" id="editRxMedPills"></div>
-          <div class="form-group" style="grid-column: span 2; margin-bottom:0;"><label>Time</label><input type="time" id="editRxMedTime"></div>
+          <div class="form-group" style="margin-bottom:0;"><label>Timeline</label><input type="number"
+              id="editRxMedTimeline"></div>
+          <div class="form-group" style="margin-bottom:0;"><label>Pills</label><input type="number" id="editRxMedPills">
+          </div>
+          <div class="form-group" style="grid-column: span 2; margin-bottom:0;"><label>Time</label><input type="time"
+              id="editRxMedTime"></div>
           <button type="button" id="updateRxMedBtn" class="btn-add"
             style="grid-column: span 2; margin: 8px 0 0 0; padding: 12px; font-size: 0.95rem;">Save Medicine
             Update</button>
         </div>
-
         <div style="display: flex; gap: 16px; margin-top: 24px;">
-          <button id="saveEditRxBtn" class="btn-add" style="flex: 1; margin: 0; background: var(--btn-blue);">Save All
-            Prescription Changes</button>
-          <button id="cancelEditRxBtn" class="btn-action"
-            style="flex: 1; padding: 16px; margin: 0; background: var(--muted);">Cancel</button>
+          <button id="saveEditRxBtn" class="btn-add" style="flex: 1; margin: 0;">Save All Prescription Changes</button>
+          <button id="cancelEditRxBtn" class="btn-small btn-secondary"
+            style="flex: 1; padding: 16px; margin: 0;">Cancel</button>
         </div>
       </div>
     </div>
-
   </div>
 
   <template id="medRowTemplate">
     <div class="med-row"
       style="background: rgba(0,0,0,0.02); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; position: relative;">
-      <button type="button" class="btn-remove remove-med-row"
-        style="position: absolute; top: -10px; right: -10px; width: 24px; height: 24px; font-size: 0.8rem; border-radius: 50%;">✖</button>
+      <button type="button" class="btn-danger remove-med-row"
+        style="position: absolute; top: -10px; right: -10px; width: 24px; height: 24px; font-size: 0.8rem; border-radius: 50%; padding:0; display:flex; align-items:center; justify-content:center; border:none; cursor:pointer;">✖</button>
       <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px;">
         <div class="form-group" style="margin-bottom: 8px;"><label style="font-size: 0.85rem;">Medicine
             Name</label><input type="text" class="med-name" required placeholder="e.g. Metformin"></div>
@@ -357,8 +354,8 @@
         <div class="form-group" style="margin-bottom: 0;"><label style="font-size: 0.85rem;">Pills</label><input
             type="number" class="med-pills" placeholder="e.g. 30" min="0"></div>
         <div class="form-group" style="margin-bottom: 0;"><label
-            style="font-size: 0.85rem; color: var(--btn-blue);">Alarm Time</label><input type="time" class="med-time"
-            required style="border-color: var(--btn-blue);"></div>
+            style="font-size: 0.85rem; color: var(--btn-teal);">Alarm Time</label><input type="time" class="med-time"
+            required style="border-color: var(--btn-teal);"></div>
       </div>
     </div>
   </template>
@@ -375,11 +372,12 @@
         <label>Phone Number (Mobile)</label>
         <input type="tel" id="onboardPhone" placeholder="e.g. +1234567890" required>
       </div>
-      <div class="form-group" style="text-align: left; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
+      <div class="form-group"
+        style="text-align: left; display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
         <input type="checkbox" id="onboardSmsToggle" style="width: auto;">
         <label style="margin: 0; font-size: 0.9rem;">Enable automated SMS Reminders</label>
       </div>
-      <button id="onboardBtn" class="btn-add" style="width: 100%; margin: 0; background: var(--btn-blue);">Save Profile</button>
+      <button id="onboardBtn" class="btn-add" style="width: 100%; margin: 0;">Save Profile</button>
     </div>
   </div>
 
@@ -388,11 +386,12 @@
       <h3 style="margin-top: 0;">Add Notes</h3>
       <p style="color: var(--muted); font-size: 0.95rem;">Add any notes or side effects.</p>
       <input type="hidden" id="sideEffectRxId">
-      <textarea id="sideEffectText" rows="4" placeholder="e.g. Nausea, headache, dizziness, feeling better..." 
+      <textarea id="sideEffectText" rows="4" placeholder="e.g. Nausea, headache, dizziness, feeling better..."
         style="width: 100%; padding: 12px; margin-bottom: 20px; border-radius: 8px; border: 1px solid var(--border); box-sizing: border-box; resize: vertical;"></textarea>
       <div style="display: flex; gap: 12px;">
-        <button id="saveSideEffectBtn" class="btn-add" style="flex: 1; margin: 0; background: var(--btn-blue);">Save Log</button>
-        <button id="cancelSideEffectBtn" class="btn-action" style="flex: 1; margin: 0; padding:14px; background: var(--muted);">Cancel</button>
+        <button id="saveSideEffectBtn" class="btn-add" style="flex: 1; margin: 0;">Save Log</button>
+        <button id="cancelSideEffectBtn" class="btn-small btn-secondary"
+          style="flex: 1; margin: 0; padding:14px;">Cancel</button>
       </div>
     </div>
   </div>
@@ -401,17 +400,19 @@
     <div class="modal-content" style="max-width: 600px;">
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <h3 style="margin: 0;">Medication History Tracker</h3>
-        <button id="closeHistoryBtn" class="btn-action" style="padding: 6px 12px; font-weight:bold; background: var(--muted);">✖</button>
+        <button id="closeHistoryBtn" class="btn-small btn-secondary"
+          style="padding: 6px 12px; font-weight:bold;">✖</button>
       </div>
       <hr style="border: 0; border-top: 1px solid var(--border); margin: 16px 0;">
-      
       <div id="historyContainer" style="max-height: 400px; overflow-y: auto; text-align: left; padding-right: 8px;">
-         <div style="text-align: center; color: var(--muted); padding: 20px;">Loading history...</div>
+        <div style="text-align: center; color: var(--muted); padding: 20px;">Loading history...</div>
       </div>
-
-      <div style="margin-top: 24px; text-align: center; border-top: 1px solid var(--border); padding-top: 16px; display: flex; justify-content: center; gap: 16px;">
-        <button id="printHistoryBtn" class="btn-action" style="background: var(--btn-blue); color: white; padding: 12px 24px;">🖨️ Print / Download History</button>
-        <button id="resetHistoryBtn" class="btn-action" style="background: var(--btn-red); color: white; padding: 12px 24px;">⚠ Reset All History</button>
+      <div
+        style="margin-top: 24px; text-align: center; border-top: 1px solid var(--border); padding-top: 16px; display: flex; justify-content: center; gap: 16px;">
+        <button id="printHistoryBtn" class="btn-primary btn-small" style="padding: 12px 24px;">🖨️ Print / Download
+          History</button>
+        <button id="resetHistoryBtn" class="btn-danger btn-small" style="padding: 12px 24px;">⚠ Reset All
+          History</button>
       </div>
     </div>
   </div>
@@ -420,38 +421,110 @@
     <div class="modal-content" style="max-width: 400px; text-align: center;">
       <h3 style="margin-top: 0; color:var(--text-main);">My Profile</h3>
       <p style="color: var(--muted); font-size: 0.95rem;">Manage your active account logic.</p>
-      
-      <div style="background: rgba(0,0,0,0.03); padding: 20px; border-radius: 12px; margin-bottom: 24px; border: 1px solid var(--border); text-align:left;">
-         <strong style="color:var(--text-main);">Name:</strong> <span id="profileNameDisplay"></span><br><br>
-         <strong style="color:var(--text-main);">Phone:</strong> <span id="profilePhoneDisplay"></span>
+      <div
+        style="background: rgba(0,0,0,0.03); padding: 20px; border-radius: 12px; margin-bottom: 24px; border: 1px solid var(--border); text-align:left;">
+        <strong style="color:var(--text-main);">Name:</strong> <span id="profileNameDisplay"></span><br><br>
+        <strong style="color:var(--text-main);">Phone:</strong> <span id="profilePhoneDisplay"></span>
       </div>
-
       <div style="display: flex; gap: 12px; flex-direction:column;">
-        <button id="deleteAccountBtn" class="btn-action" style="margin: 0; padding:14px; background: var(--btn-red); font-weight:bold; color:white;">⚠️ Permanently Delete Account</button>
-        <button id="closeProfileBtn" class="btn-action" style="margin: 0; padding:14px; background: var(--muted);">Cancel</button>
+        <button id="deleteAccountBtn" class="btn-danger btn-small" style="margin: 0; padding:14px; font-weight:bold;">⚠️
+          Permanently Delete Account</button>
+        <button id="closeProfileBtn" class="btn-small btn-secondary" style="margin: 0; padding:14px;">Cancel</button>
       </div>
     </div>
   </div>
 
   <div id="toast" class="toast"></div>
 
+  <div id="expandedMapModal" class="modal">
+    <div class="modal-content"
+      style="max-width: 90%; width: 1200px; height: 85vh; display: flex; flex-direction: column; position: relative;">
+      <button id="closeExpandedMapBtn" class="close-btn">✖</button>
+
+      <!-- Modal Search Bar -->
+      <div style="display: flex; gap: 12px; margin-bottom: 20px; align-items: center;">
+        <div style="position: relative; flex: 2;">
+          <input type="text" id="modalMapLocationInput" placeholder="Search for a location here..."
+            style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); box-sizing: border-box; font-size: 1rem;">
+          <div id="modalAutocompleteResults" class="autocomplete-dropdown hidden"></div>
+        </div>
+        <div style="display: flex; gap: 8px; flex: 1;">
+          <button id="modalSearchMapLocBtn" class="btn-primary"
+            style="flex: 1; padding: 10px; height: 46px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 6px;">Search</button>
+          <button id="modalCurrentLocBtn" class="btn-add"
+            style="flex: 1; padding: 10px; height: 46px; border-radius: 10px; display: flex; align-items: center; justify-content: center; gap: 6px; background: var(--btn-green);">📍
+            Current</button>
+        </div>
+      </div>
+
+      <div class="map-layout-horizontal" style="display: flex; gap: 20px; flex: 1; min-height: 0; overflow: hidden;">
+        <div id="modalMapContainer"
+          style="flex: 2.5; border-radius: 12px; border: 1px solid var(--border); background: #eee; z-index: 1;"></div>
+        <div id="modalMapStoreList"
+          style="flex: 1; border-radius: 12px; border: 1px solid var(--border); background: var(--white); overflow-y: auto; padding: 20px;">
+          <p style="color:var(--muted); text-align:center; margin-top:50px;">Use the main search to find pharmacies.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js"></script>
-  <script type="text/javascript">
-    function googleTranslateElementInit() {
-      new google.translate.TranslateElement({pageLanguage: 'en', includedLanguages: 'hi,en,es,fr,de', layout: google.translate.TranslateElement.InlineLayout.SIMPLE}, 'google_translate_element');
-    }
-  </script>
-  <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
   <script>
-    function updateLiveClock() {
-      const now = new Date();
-      const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      const clockElement = document.getElementById('clockTime');
-      if (clockElement) clockElement.textContent = timeString;
+    const customLanguageBtn = document.getElementById('customLanguageBtn');
+    const languagePopup = document.getElementById('languagePopup');
+
+    customLanguageBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      languagePopup.classList.toggle('active');
+    });
+
+    document.addEventListener('click', () => {
+      languagePopup.classList.remove('active');
+    });
+
+    languagePopup.addEventListener('click', (e) => {
+      const btn = e.target.closest('.lang-option');
+      if (!btn) return;
+      const langCode = btn.getAttribute('data-lang');
+      const langName = btn.innerText;
+
+      const cookieValue = `/en/${langCode}`;
+      document.cookie = `googtrans=${cookieValue}; path=/;`;
+      document.cookie = `googtrans=${cookieValue}; path=/; domain=${window.location.hostname};`;
+
+      const googleCombo = document.querySelector('.goog-te-combo');
+      if (googleCombo) {
+        googleCombo.value = langCode;
+        googleCombo.dispatchEvent(new Event('change'));
+      } else {
+        window.location.reload();
+      }
+
+      customLanguageBtn.innerHTML = `<span>🌐</span> ${langName}`;
+      languagePopup.classList.remove('active');
+    });
+
+    window.addEventListener('load', () => {
+      const match = document.cookie.match(/googtrans=\/en\/([^;]+)/);
+      if (match) {
+        const langCode = match[1];
+        const langOption = document.querySelector(`.lang-option[data-lang="${langCode}"]`);
+        if (langOption) {
+          customLanguageBtn.innerHTML = `<span>🌐</span> ${langOption.innerText}`;
+        }
+      }
+    });
+
+    function googleTranslateElementInit() {
+      new google.translate.TranslateElement({
+        pageLanguage: 'en',
+        includedLanguages: 'hi,en,es,fr,de',
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+      }, 'google_translate_element');
     }
-    setInterval(updateLiveClock, 1000);
-    updateLiveClock();
   </script>
+  <script type="text/javascript"
+    src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
 </body>
 
 </html>
