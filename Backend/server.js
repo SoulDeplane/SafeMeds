@@ -78,7 +78,7 @@ async function runMigrations() {
       await db.query(`
         DELETE FROM users 
         WHERE role = 'patient' AND user_id != $1
-      `);
+      `, [activeId]);
     }
 
     console.log("Migrations successful.");
