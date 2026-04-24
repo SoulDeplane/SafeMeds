@@ -30,6 +30,10 @@ const onboardBtn = document.getElementById("onboardBtn");
 const onboardName = document.getElementById("onboardName");
 const onboardPhone = document.getElementById("onboardPhone");
 const onboardSmsToggle = document.getElementById("onboardSmsToggle");
+const authChoiceModal = document.getElementById("authChoiceModal");
+const choiceLoginBtn = document.getElementById("choiceLoginBtn");
+const choiceSignupBtn = document.getElementById("choiceSignupBtn");
+const backOnboardBtn = document.getElementById("backOnboardBtn");
 
 const sideEffectModal = document.getElementById("sideEffectModal");
 const sideEffectText = document.getElementById("sideEffectText");
@@ -43,6 +47,9 @@ const viewHistoryBtn = document.getElementById("viewHistoryBtn");
 const closeHistoryBtn = document.getElementById("closeHistoryBtn");
 const resetHistoryBtn = document.getElementById("resetHistoryBtn");
 const printHistoryBtn = document.getElementById("printHistoryBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const updatePhoneBtn = document.getElementById("updatePhoneBtn");
+const updatePhoneInput = document.getElementById("updatePhoneInput");
 
 const rxForm = document.getElementById("rxForm");
 const medicationsContainer = document.getElementById("medicationsContainer");
@@ -60,8 +67,6 @@ const todaysList = document.getElementById("todaysList");
 const medList = document.getElementById("medList");
 const rxList = document.getElementById("rxList");
 
-let recognition = null;
-let isListening = false;
 let prescriptions = [];
 let todaysReminders = [];
 const toast = document.getElementById("toast");
@@ -85,13 +90,20 @@ async function toggleBtnLoading(btn, isLoading) {
 
 const API_BASE = "http://localhost:3000/api";
 
-async function getOrCreateUser(fullName, role) {
-  const email = `${fullName.replace(/\s+/g, '').toLowerCase() || 'unknown'}_${role}@system.com`;
+function normalizePhoneIN(p) {
+  return String(p || "").replace(/\D/g, "").slice(-10);
+}
+
+async function getOrCreateUser(fullName, role, phone) {
+  const normalized = normalizePhoneIN(phone);
+  const phoneKey = normalized || "nophone"; // used only as part of the email uniqueness key
+  const nameKey = fullName.replace(/\s+/g, '').toLowerCase() || 'unknown';
+  const email = `${nameKey}_${phoneKey}_${role}@safemeds.local`;
   try {
     const response = await fetch(`${API_BASE}/users`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, full_name: fullName, role })
+      body: JSON.stringify({ email, full_name: fullName, phone_number: normalized || null, role })
     });
     const data = await response.json();
     if (data.success) return data.data.user_id;
@@ -158,9 +170,20 @@ async function loadServerData() {
     const u = JSON.parse(uData);
     const rxResp = await fetch(`${API_BASE}/prescriptions?patientId=${u.id}`);
     const schResp = await fetch(`${API_BASE}/schedules?patientId=${u.id}`);
-    if (!rxResp.ok || !schResp.ok) return;
+    const logResp = await fetch(`${API_BASE}/history/${u.id}`);
+    if (!rxResp.ok || !schResp.ok || !logResp.ok) return;
     const rxData = await rxResp.json();
     const schData = await schResp.json();
+    const logData = await logResp.json();
+    
+    // Process history to find today's handled reminders
+    const todayLogs = [];
+    const todayStr = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+    if (logData.success && logData.data[todayStr]) {
+      logData.data[todayStr].forEach(l => todayLogs.push(l));
+    }
+    window.todayAdherenceLogs = todayLogs; 
+
     const groupedMap = new Map();
     rxData.data.forEach(p => {
       let safeDate = p.start_date ? p.start_date.split('T')[0] : 'Unknown';
@@ -189,6 +212,7 @@ async function loadServerData() {
       }
       let group = groupedMap.get(groupKey);
       group.originalRxIds.push(p.prescription_id);
+      group.isPaused = p.is_paused || false;
       let schedules = schData.data.filter(s => s.prescription_id === p.prescription_id);
       schedules.forEach(s => {
         group.medications.push({
@@ -198,6 +222,7 @@ async function loadServerData() {
           dosage: p.dosage || "-",
           freq: p.frequency || "-",
           route: p.dosage_form || "-",
+          isPaused: p.is_paused || false,
           timeline: "-",
           pills: p.total_pills || 0,
           time: s.time_of_day ? s.time_of_day.substring(0, 5) : "08:00",
@@ -219,6 +244,97 @@ if ("Notification" in window) {
     Notification.requestPermission();
   }
 }
+
+// Register the service worker so notifications can fire when the tab is
+// backgrounded or the browser window is minimised. Falls back gracefully on
+// browsers without SW support (notifications still work via new Notification()
+// as long as the tab is open).
+let swRegistration = null;
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("sw.js").then((reg) => {
+    swRegistration = reg;
+  }).catch((err) => {
+    console.warn("Service worker registration failed:", err);
+  });
+}
+
+// Single entry point for showing a medication notification. Prefers the
+// service worker (OS-level, persistent) and falls back to the in-page
+// Notification constructor.
+async function showMedNotification(title, options) {
+  if (!("Notification" in window)) {
+    console.warn("[notify] browser has no Notification API");
+    return;
+  }
+  if (Notification.permission !== "granted") {
+    console.warn(`[notify] permission is '${Notification.permission}' — click 'Enable Notifications' in the header to grant it`);
+    return;
+  }
+  const payload = {
+    body: options.body,
+    icon: options.icon || 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png',
+    badge: options.icon || 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png',
+    requireInteraction: true,
+    tag: options.tag || 'safemeds-reminder',
+    renotify: true,
+  };
+  try {
+    const reg = swRegistration || (navigator.serviceWorker && await navigator.serviceWorker.ready);
+    if (reg && reg.showNotification) {
+      await reg.showNotification(title, payload);
+      console.log("[notify] fired via service worker:", title);
+      return;
+    }
+  } catch (err) {
+    console.warn("[notify] SW path failed, falling back to page-local:", err);
+  }
+  try {
+    new Notification(title, payload);
+    console.log("[notify] fired via page-local Notification():", title);
+  } catch (err) {
+    console.warn("[notify] Notification() failed:", err);
+  }
+}
+
+// Visible banner + button so the user has a clear, user-gesture-triggered
+// path to granting notification permission — the silent requestPermission()
+// on page load is often ignored by Chrome/Brave until the user interacts.
+function syncNotifButton() {
+  const btn = document.getElementById("enableNotifsBtn");
+  if (!btn) return;
+  if (!("Notification" in window)) {
+    btn.style.display = "none";
+    return;
+  }
+  if (Notification.permission === "granted") {
+    btn.style.display = "none";
+  } else if (Notification.permission === "denied") {
+    btn.style.display = "flex";
+    btn.textContent = "🔕 Notifications blocked — click for help";
+  } else {
+    btn.style.display = "flex";
+    btn.textContent = "🔔 Enable Notifications";
+  }
+}
+document.addEventListener("DOMContentLoaded", syncNotifButton);
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("enableNotifsBtn");
+  if (!btn) return;
+  btn.addEventListener("click", async () => {
+    if (Notification.permission === "denied") {
+      alert("Your browser has blocked notifications for this site. Open site settings (🔒 icon next to the URL) and set Notifications to Allow, then reload.");
+      return;
+    }
+    const result = await Notification.requestPermission();
+    syncNotifButton();
+    if (result === "granted") {
+      showToast("Notifications enabled ✓");
+      showMedNotification("SafeMeds", { body: "Notifications are working — reminders will appear as desktop toasts.", tag: "test" });
+    } else {
+      showToast("Notifications not enabled", "warn");
+    }
+  });
+});
 
 let triggeredToday = new Set();
 
@@ -248,6 +364,7 @@ function generateTodaysReminders() {
         pills: med.pills || 0,
         dailyRequirement: dailyReq,
         icon: H < 12 ? "☀️" : (H < 18 ? "🕒" : "🌙"),
+        isPaused: med.isPaused || false,
         status: "pending",
         skipReason: ""
       });
@@ -262,6 +379,25 @@ function generateTodaysReminders() {
       existing.pills = med.pills || 0;
       existing.dailyRequirement = dailyReq;
       existing.icon = H < 12 ? "☀️" : (H < 18 ? "🕒" : "🌙");
+      existing.isPaused = med.isPaused || false;
+    }
+
+    // Update status from server logs
+    const currentRem = todaysReminders.find(r => r.id === remId);
+    if (window.todayAdherenceLogs && currentRem) {
+      // Match on name plus 24-hour time. Prefer scheduled_time (exactly the dose's
+      // configured slot) and fall back to actual_time so older logs still resolve.
+      const remTime = currentRem.mappedTime24.substring(0, 5);
+      const log = window.todayAdherenceLogs.find(l => {
+        if ((l.medication || '').toLowerCase() !== currentRem.name.toLowerCase()) return false;
+        const sch = (l.scheduled_time || '').substring(0, 5);
+        const act = (l.time || '').split(' ')[0];
+        return sch === remTime || act === remTime;
+      });
+      if (log) {
+        currentRem.status = log.status;
+        if (log.status === 'skipped') currentRem.skipReason = log.reason || "Skipped";
+      }
     }
   });
   const prescribedIds = allMeds.map((med) => `${med.serverSchId}`);
@@ -281,21 +417,26 @@ setInterval(() => {
   }
 
   todaysReminders.forEach(rem => {
-    if (rem.status === 'pending' && rem.mappedTime24 === current24h && !triggeredToday.has(rem.id)) {
+    if (rem.status === 'pending' && rem.mappedTime24 === current24h && !triggeredToday.has(rem.id) && !rem.isPaused) {
       triggeredToday.add(rem.id);
       window.triggerAlarm(rem.id);
       const uData = JSON.parse(localStorage.getItem('safemeds_user'));
-      if (uData && uData.smsEnabled && uData.phone && rem.serverSchId) {
-        fetch(`${API_BASE}/reminders`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            schedule_id: rem.serverSchId,
-            patient_id: uData.id,
-            reminder_time: new Date().toISOString(),
-            reminder_type: "sms"
-          })
-        }).catch(e => console.error("SMS skip", e));
+      if (uData && uData.smsEnabled && uData.phone) {
+        triggerSMSReminder(uData.phone, rem.name);
+        
+        // Also log the reminder in the DB
+        if (rem.serverSchId) {
+          fetch(`${API_BASE}/reminders`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              schedule_id: rem.serverSchId,
+              patient_id: uData.id,
+              reminder_time: new Date().toISOString(),
+              reminder_type: "sms"
+            })
+          }).catch(e => console.error("SMS log skip", e));
+        }
       }
     }
   });
@@ -314,7 +455,7 @@ function getAllMedications() {
 window.addEventListener('DOMContentLoaded', async () => {
   const userData = localStorage.getItem('safemeds_user');
   if (!userData) {
-    onboardModal.classList.add('active');
+    authChoiceModal.classList.add('active');
   } else {
     const u = JSON.parse(userData);
     document.getElementById('rxPatientName').value = u.name;
@@ -327,11 +468,33 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 onboardBtn.addEventListener('click', async () => {
   const name = onboardName.value.trim();
-  const phone = onboardPhone.value.trim();
+  const rawPhone = onboardPhone.value.trim();
+  const phone = normalizePhoneIN(rawPhone);
   const sms = onboardSmsToggle.checked;
-  if (!name || !phone) return alert("Please enter name and phone.");
+  if (!name || !phone) return alert("Please enter name and a valid 10-digit phone.");
   await toggleBtnLoading(onboardBtn, true);
-  const userId = await getOrCreateUser(name, 'patient');
+
+  // We're inside a user-gesture click handler — this is the reliable moment
+  // to request notification permission. The silent request on page load is
+  // frequently suppressed by Chromium browsers.
+  if ("Notification" in window && Notification.permission === "default") {
+    try { await Notification.requestPermission(); } catch (_) {}
+    syncNotifButton();
+  }
+
+  let userId = null;
+  let loggedIn = false;
+  try {
+    const resp = await fetch(`${API_BASE}/users/check?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}`);
+    const check = await resp.json();
+    if (check.success && check.exists && check.user) {
+      userId = check.user.user_id;
+      loggedIn = true;
+    }
+  } catch (e) { console.error("profile lookup failed", e); }
+
+  if (!userId) userId = await getOrCreateUser(name, 'patient', phone);
+
   if (userId) {
     localStorage.setItem('safemeds_user', JSON.stringify({
       id: userId,
@@ -342,9 +505,52 @@ onboardBtn.addEventListener('click', async () => {
     onboardModal.classList.remove('active');
     document.getElementById('rxPatientName').value = name;
     await loadServerData();
-    showToast("Profile created successfully!");
+    showToast(loggedIn ? "Welcome back!" : "Profile created successfully!");
   }
   await toggleBtnLoading(onboardBtn, false);
+});
+
+async function checkUserExistence() {
+  const name = onboardName.value.trim();
+  const phone = onboardPhone.value.trim();
+  if (name.length > 2 && phone.length > 5) {
+    try {
+      const resp = await fetch(`${API_BASE}/users/check?name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}`);
+      const data = await resp.json();
+      if (data.exists) {
+        onboardBtn.textContent = "Login";
+        onboardBtn.style.background = "#1a73e8"; // Use a slightly different blue for login
+      } else {
+        onboardBtn.textContent = "Save Profile";
+        onboardBtn.style.background = "var(--btn-teal)";
+      }
+    } catch (err) { }
+  } else {
+    onboardBtn.textContent = "Save Profile";
+    onboardBtn.style.background = "var(--btn-teal)";
+  }
+}
+
+onboardName.addEventListener("input", checkUserExistence);
+onboardPhone.addEventListener("input", checkUserExistence);
+
+choiceLoginBtn.addEventListener("click", () => {
+  authChoiceModal.classList.remove("active");
+  onboardModal.classList.add("active");
+  onboardBtn.textContent = "Login";
+  onboardBtn.style.background = "#1a73e8";
+});
+
+choiceSignupBtn.addEventListener("click", () => {
+  authChoiceModal.classList.remove("active");
+  onboardModal.classList.add("active");
+  onboardBtn.textContent = "Save Profile";
+  onboardBtn.style.background = "var(--btn-teal)";
+});
+
+backOnboardBtn.addEventListener("click", () => {
+  onboardModal.classList.remove("active");
+  authChoiceModal.classList.add("active");
 });
 
 function switchView(view) {
@@ -389,8 +595,10 @@ const modalAutocompleteResults = document.getElementById("modalAutocompleteResul
 
 let map = null;
 let modalMap = null;
-let mapMarkers = [];
-let modalMapMarkers = [];
+let mapMarkers = [];            // legacy — now holds pharmacy markers for main map
+let modalMapMarkers = [];       // pharmacy markers for modal map
+let userMarker = null;          // user location dot on main map
+let modalUserMarker = null;     // user location dot on modal map
 let debounceTimer;
 let currentMapCenter = [78.0322, 30.3165];
 
@@ -421,11 +629,15 @@ expandMapBtn.addEventListener('click', () => {
       center: currentMapCenter,
       zoom: map ? map.getZoom() : 13
     });
+    modalMap.on('load', () => {
+      setTimeout(() => modalMap.resize(), 50);
+    });
   } else {
     modalMap.setCenter(currentMapCenter);
     modalMap.setZoom(map ? map.getZoom() : 13);
   }
-  setTimeout(() => modalMap.resize(), 300);
+  // Resize after modal transition completes so tiles render at full size
+  setTimeout(() => { if (modalMap) modalMap.resize(); }, 350);
   syncModalStoreList();
 });
 
@@ -463,8 +675,21 @@ modalMapLocationInput.addEventListener("input", (e) => {
 });
 
 function handleAutocomplete(query, inputEl, resultsEl) {
+  clearTimeout(debounceTimer);
   debounceTimer = setTimeout(() => {
-    const url = `https://api.tomtom.com/search/2/search/${encodeURIComponent(query)}.json?key=${ttKey}&countrySet=IN&limit=5`;
+    // Bias results to the current map view (Google-style "search near here")
+    const lon = Array.isArray(currentMapCenter) ? currentMapCenter[0] : currentMapCenter.lng;
+    const lat = Array.isArray(currentMapCenter) ? currentMapCenter[1] : currentMapCenter.lat;
+    const params = new URLSearchParams({
+      key: ttKey,
+      countrySet: "IN",
+      limit: "5",
+      typeahead: "true",
+      lat: String(lat),
+      lon: String(lon),
+      radius: "50000",
+    });
+    const url = `https://api.tomtom.com/search/2/search/${encodeURIComponent(query)}.json?${params.toString()}`;
     fetch(url)
       .then(res => res.json())
       .then(data => {
@@ -479,9 +704,9 @@ function handleAutocomplete(query, inputEl, resultsEl) {
             div.innerHTML = `<strong style="color: var(--text-main); font-size: 0.95rem;">${mainText}</strong><br><small style="color: var(--muted); font-size: 0.8rem;">${exactAddress}</small>`;
             div.onclick = () => {
               mapLocationInput.value = exactAddress;
-              modalMapLocationInput.value = exactAddress;
+              if (modalMapLocationInput) modalMapLocationInput.value = exactAddress;
               autocompleteResults.classList.add("hidden");
-              modalAutocompleteResults.classList.add("hidden");
+              if (modalAutocompleteResults) modalAutocompleteResults.classList.add("hidden");
               fetchStoresAndMap(item.position.lat, item.position.lon);
             };
             resultsEl.appendChild(div);
@@ -491,7 +716,7 @@ function handleAutocomplete(query, inputEl, resultsEl) {
         }
       })
       .catch(err => console.error("Autocomplete Error: ", err));
-  }, 400);
+  }, 300);
 }
 
 document.addEventListener("click", (e) => {
@@ -503,47 +728,136 @@ document.addEventListener("click", (e) => {
   }
 });
 
-function handleCurrentLocation() {
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        mapLocationInput.value = "Current Location";
-        if (modalMapLocationInput) modalMapLocationInput.value = "Current Location";
-        fetchStoresAndMap(lat, lng);
-      },
-      (error) => alert("Unable to retrieve location.")
-    );
+async function reverseGeocode(lat, lng) {
+  try {
+    const url = `https://api.tomtom.com/search/2/reverseGeocode/${lat},${lng}.json?key=${ttKey}`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const first = data.addresses && data.addresses[0];
+    return first?.address?.freeformAddress || null;
+  } catch (e) {
+    console.warn("Reverse geocode failed:", e);
+    return null;
   }
+}
+
+function handleCurrentLocation() {
+  if (!navigator.geolocation) {
+    return alert("Your browser does not support geolocation.");
+  }
+
+  const buttons = [currentLocBtn, modalCurrentLocBtn].filter(Boolean);
+  const originalLabels = buttons.map(b => b.textContent);
+  buttons.forEach(b => { b.textContent = "Locating…"; b.disabled = true; });
+  const restoreButtons = () => {
+    buttons.forEach((b, i) => { b.textContent = originalLabels[i]; b.disabled = false; });
+  };
+
+  const onSuccess = async (position) => {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+    const address = await reverseGeocode(lat, lng);
+    const shown = address || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    mapLocationInput.value = shown;
+    if (modalMapLocationInput) modalMapLocationInput.value = shown;
+    fetchStoresAndMap(lat, lng);
+    restoreButtons();
+  };
+
+  const tryLowAccuracy = () => {
+    navigator.geolocation.getCurrentPosition(
+      onSuccess,
+      (err) => {
+        restoreButtons();
+        console.error("Geolocation failed:", err);
+        if (err.code === err.PERMISSION_DENIED) {
+          alert("Location permission denied. Enable it in your browser's site settings to use Current Location.");
+        } else {
+          alert("Unable to retrieve your location. Please check your device's location services and try again.");
+        }
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
+    );
+  };
+
+  navigator.geolocation.getCurrentPosition(
+    onSuccess,
+    (err) => {
+      if (err.code === err.PERMISSION_DENIED) {
+        restoreButtons();
+        alert("Location permission denied. Enable it in your browser's site settings to use Current Location.");
+        return;
+      }
+      // Fall back to low-accuracy retry on POSITION_UNAVAILABLE / TIMEOUT
+      tryLowAccuracy();
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
 }
 
 currentLocBtn.addEventListener("click", handleCurrentLocation);
 if (modalCurrentLocBtn) modalCurrentLocBtn.addEventListener("click", handleCurrentLocation);
 
 function handleSearch() {
-  const query = (modalExpanded && modalMapLocationInput.value.trim()) ? modalMapLocationInput.value.trim() : mapLocationInput.value.trim();
+  const query = (modalExpanded && modalMapLocationInput && modalMapLocationInput.value.trim())
+    ? modalMapLocationInput.value.trim()
+    : mapLocationInput.value.trim();
   if (!query) return;
-  const url = `https://api.tomtom.com/search/2/search/${encodeURIComponent(query)}.json?key=${ttKey}&countrySet=IN&limit=1`;
+  const lon = Array.isArray(currentMapCenter) ? currentMapCenter[0] : currentMapCenter.lng;
+  const lat = Array.isArray(currentMapCenter) ? currentMapCenter[1] : currentMapCenter.lat;
+  const params = new URLSearchParams({
+    key: ttKey,
+    countrySet: "IN",
+    limit: "5",
+    lat: String(lat),
+    lon: String(lon),
+    radius: "50000",
+  });
+  const url = `https://api.tomtom.com/search/2/search/${encodeURIComponent(query)}.json?${params.toString()}`;
   fetch(url)
     .then(res => res.json())
     .then(data => {
-      if (data.results && data.results.length > 0) {
-        const address = data.results[0].address.freeformAddress || query;
-        mapLocationInput.value = address;
-        if (modalMapLocationInput) modalMapLocationInput.value = address;
-        fetchStoresAndMap(data.results[0].position.lat, data.results[0].position.lon);
-      } else {
+      if (!data.results || data.results.length === 0) {
         alert("Location not found.");
+        return;
       }
+      const top = data.results[0];
+      const address = top.address.freeformAddress || query;
+      mapLocationInput.value = address;
+      if (modalMapLocationInput) modalMapLocationInput.value = address;
+      fetchStoresAndMap(top.position.lat, top.position.lon);
+    })
+    .catch(err => {
+      console.error("Search error:", err);
+      alert("Search failed. Please try again.");
     });
 }
 
 searchMapLocBtn.addEventListener("click", handleSearch);
 if (modalSearchMapLocBtn) modalSearchMapLocBtn.addEventListener("click", handleSearch);
 
+// Submit search on Enter key
+mapLocationInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); handleSearch(); } });
+if (modalMapLocationInput) modalMapLocationInput.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); handleSearch(); } });
+
+function makeUserMarkerElement() {
+  const el = document.createElement('div');
+  el.style.backgroundColor = '#ea4335';
+  el.style.width = '16px';
+  el.style.height = '16px';
+  el.style.borderRadius = '50%';
+  el.style.border = '2px solid white';
+  el.style.boxShadow = '0 0 4px rgba(0,0,0,0.5)';
+  return el;
+}
+
 function fetchStoresAndMap(lat, lng) {
+  if (!map) return;
+
+  currentMapCenter = [lng, lat];
   map.flyTo({ center: [lng, lat], zoom: 14 });
+
+  // Clear pharmacy markers (keep user marker separate)
   mapMarkers.forEach(m => m.remove());
   mapMarkers = [];
 
@@ -553,21 +867,20 @@ function fetchStoresAndMap(lat, lng) {
     modalMapMarkers = [];
   }
 
-  const userMarkerElement = document.createElement('div');
-  userMarkerElement.style.backgroundColor = '#ea4335';
-  userMarkerElement.style.width = '16px';
-  userMarkerElement.style.height = '16px';
-  userMarkerElement.style.borderRadius = '50%';
-  userMarkerElement.style.border = '2px solid white';
-  userMarkerElement.style.boxShadow = '0 0 4px rgba(0,0,0,0.5)';
-
-  const userMarker = new tt.Marker({ element: userMarkerElement }).setLngLat([lng, lat]).addTo(map);
-  mapMarkers.push(userMarker);
-
-  if (modalMap) {
-    const modalUserMarker = new tt.Marker({ element: userMarkerElement.cloneNode(true) }).setLngLat([lng, lat]).addTo(modalMap);
-    modalMapMarkers.push(modalUserMarker);
+  // Reuse / move the single user marker instead of stacking duplicates
+  if (userMarker) {
+    userMarker.setLngLat([lng, lat]);
+  } else {
+    userMarker = new tt.Marker({ element: makeUserMarkerElement() }).setLngLat([lng, lat]).addTo(map);
   }
+  if (modalMap) {
+    if (modalUserMarker) {
+      modalUserMarker.setLngLat([lng, lat]);
+    } else {
+      modalUserMarker = new tt.Marker({ element: makeUserMarkerElement() }).setLngLat([lng, lat]).addTo(modalMap);
+    }
+  }
+
   mapStoreList.innerHTML = '<p style="color:var(--muted); text-align:center; margin-top:50px;">Scanning for pharmacies nearby...</p>';
   tt.services.fuzzySearch({
     key: ttKey,
@@ -578,6 +891,7 @@ function fetchStoresAndMap(lat, lng) {
   }).then(response => {
     if (!response.results || response.results.length === 0) {
       mapStoreList.innerHTML = '<p style="color:var(--btn-red); text-align:center; margin-top:50px;">No pharmacies found nearby.</p>';
+      syncModalStoreList();
       return;
     }
     let storeHtml = '<h4 style="margin-top:0; border-bottom: 2px solid var(--border); padding-bottom: 12px; position:sticky; top:0; background:white; z-index:10;">Nearest 10 Pharmacies</h4>';
@@ -598,7 +912,7 @@ function fetchStoresAndMap(lat, lng) {
       }
 
       storeHtml += `
-        <div style="padding: 12px 0; border-bottom: 1px dashed #ddd; cursor:pointer;" onclick="map.flyTo({center: [${pLng}, ${pLat}], zoom: 16}); if(modalMap) modalMap.flyTo({center: [${pLng}, ${pLat}], zoom: 16});">
+        <div class="store-item" data-lat="${pLat}" data-lng="${pLng}" style="padding: 12px 0; border-bottom: 1px dashed #ddd; cursor:pointer;">
           <strong style="color: var(--text-main); font-size: 1.05rem;">${name}</strong><br>
           <small style="color: var(--btn-blue); font-weight: 600;">📍 ~${distKm} km away</small><br>
           <small style="color: var(--muted);">${address}</small>
@@ -608,9 +922,23 @@ function fetchStoresAndMap(lat, lng) {
     mapStoreList.innerHTML = storeHtml;
     syncModalStoreList();
   }).catch(err => {
+    console.error("Pharmacy search failed:", err);
     mapStoreList.innerHTML = '<p style="color:var(--btn-red); text-align:center; margin-top:50px;">Error loading pharmacies.</p>';
   });
 }
+
+// Delegated click: fly both maps to a selected pharmacy
+function onStoreClick(e) {
+  const item = e.target.closest('.store-item');
+  if (!item) return;
+  const pLat = parseFloat(item.getAttribute('data-lat'));
+  const pLng = parseFloat(item.getAttribute('data-lng'));
+  if (isNaN(pLat) || isNaN(pLng)) return;
+  if (map) map.flyTo({ center: [pLng, pLat], zoom: 16 });
+  if (modalMap) modalMap.flyTo({ center: [pLng, pLat], zoom: 16 });
+}
+mapStoreList.addEventListener('click', onStoreClick);
+if (modalMapStoreList) modalMapStoreList.addEventListener('click', onStoreClick);
 
 window.triggerAlarm = function (id) {
   const rem = todaysReminders.find(r => r.id === id);
@@ -622,12 +950,10 @@ window.triggerAlarm = function (id) {
     <span style="color: var(--btn-blue); font-weight:bold; display:inline-block; margin-top:8px;">Scheduled for ${rem.time}</span>
   `;
   ringingModal.classList.add('active');
-  if ("Notification" in window && Notification.permission === "granted") {
-    new Notification(`Medication Reminder: ${rem.name}`, {
-      body: `It's time to take ${rem.dosage} via ${rem.route} scheduled at ${rem.time}.`,
-      icon: 'https://cdn-icons-png.flaticon.com/512/2966/2966327.png'
-    });
-  }
+  showMedNotification(`Medication Reminder: ${rem.name}`, {
+    body: `It's time to take ${rem.dosage} via ${rem.route} scheduled at ${rem.time}.`,
+    tag: `med-reminder-${rem.id}`,
+  });
 };
 
 ringingDoneBtn.addEventListener("click", async () => {
@@ -638,7 +964,32 @@ ringingDoneBtn.addEventListener("click", async () => {
     reminder.status = "taken";
     if (reminder.serverRxId) {
       await toggleBtnLoading(btn, true);
-      await fetch(`${API_BASE}/prescriptions/${reminder.serverRxId}/take`, { method: "PUT" });
+      const scheduledTime = new Date().toISOString().split('T')[0] + 'T' + reminder.mappedTime24 + ':00';
+      try {
+        const resp = await fetch(`${API_BASE}/prescriptions/${reminder.serverRxId}/take`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            schedule_id: reminder.serverSchId,
+            scheduled_time: scheduledTime
+          })
+        });
+        const resJson = await resp.json().catch(() => ({}));
+        if (resJson && resJson.refill_needed) {
+          const pillsLeft = resJson.data?.total_pills ?? 0;
+          const medName = resJson.medication_name || reminder.name;
+          showToast(`Refill needed — only ${pillsLeft} pill(s) left of ${medName}`, "warn");
+          showMedNotification("SafeMeds Refill Alert", {
+            body: `Only ${pillsLeft} pill(s) of ${medName} remaining. Please refill soon.`,
+            tag: `refill-${reminder.serverRxId}`,
+          });
+          if (resJson.refill_sms && resJson.refill_sms.ok === false) {
+            console.warn("Refill SMS not delivered:", resJson.refill_sms);
+          }
+        }
+      } catch (err) {
+        console.error("Take request failed:", err);
+      }
       await loadServerData();
       await toggleBtnLoading(btn, false);
     }
@@ -665,20 +1016,31 @@ confirmSkipBtn.addEventListener("click", async () => {
   const btn = confirmSkipBtn;
   const reminder = todaysReminders.find(r => r.id === id);
   if (reminder) {
+    // Set status locally first so it survives the loadServerData re-render.
+    // (The server-to-client log match is done on medication name and scheduled_time,
+    //  so wait — we also want the server log to be the source of truth on reload.)
+    reminder.status = "skipped";
+    reminder.skipReason = reason;
     if (reminder.serverRxId) {
       await toggleBtnLoading(btn, true);
-      await fetch(`${API_BASE}/prescriptions/${reminder.serverRxId}/skip`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reason })
-      });
+      const scheduledTime = new Date().toISOString().split('T')[0] + 'T' + reminder.mappedTime24 + ':00';
+      try {
+        await fetch(`${API_BASE}/prescriptions/${reminder.serverRxId}/skip`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            reason,
+            schedule_id: reminder.serverSchId,
+            scheduled_time: scheduledTime
+          })
+        });
+      } catch (err) {
+        console.error("Skip request failed:", err);
+      }
       await loadServerData();
       await toggleBtnLoading(btn, false);
-    } else {
-      reminder.status = "skipped";
-      reminder.skipReason = reason;
-      renderTodays();
     }
+    renderTodays();
     skipModal.classList.remove("active");
     showToast("Medication skipped & logged!");
   }
@@ -698,29 +1060,31 @@ function renderTodays() {
     let statusIcon = "";
     let actions = "";
     if (rem.status === "taken") {
-      statusIcon = `<span style="color: var(--btn-green); font-size: 1.5rem;">✔️</span>`;
+      statusIcon = `<span style="color: var(--btn-green); font-size: 1.5rem; font-weight: bold;">✔️ Taken</span>`;
+      actions = ``;
     } else if (rem.status === "skipped") {
       statusIcon = `
         <div style="text-align:right;">
-          <span style="color: var(--btn-red); font-size: 1.2rem;">✖</span>
-          <div style="font-size:0.75rem; color:var(--text-light); margin-top:4px;">${rem.skipReason}</div>
+          <span style="color: var(--btn-red); font-size: 1.2rem; font-weight: bold;">❌ Skipped</span>
+          <div style="font-size:0.75rem; color:var(--text-light); margin-top:4px;">Reason: ${rem.skipReason}</div>
         </div>
       `;
+      actions = ``;
     } else {
       actions = `
-        <button class="btn-small btn-primary" onclick="triggerAlarm('${rem.id}')">Simulate Alarm</button>
+        <div style="color: var(--btn-blue); font-size: 0.85rem; font-weight: 600;">Upcoming: ${rem.time}</div>
       `;
     }
     const colors = ['bg-teal', 'bg-blue', 'bg-orange'];
     const colorClass = colors[index % colors.length];
     return `
-      <div class="med-item">
+      <div class="med-item" style="${(rem.status === 'taken' || rem.status === 'skipped') ? 'opacity: 0.8; background: #f9f9f9;' : ''}">
         <div class="med-icon-circle ${colorClass}">${rem.icon}</div> 
         <div class="med-details">
-          <div class="med-title">${rem.time} - ${rem.name}</div>
+          <div class="med-title" style="${(rem.status === 'taken' || rem.status === 'skipped') ? 'text-decoration: line-through; color: var(--muted);' : ''}">${rem.time} - ${rem.name}</div>
           <div class="med-subtitle">Dosage: ${rem.dosage} | Route: ${rem.route}</div>
         </div>
-        <div style="display:flex; flex-direction:column; align-items:flex-end; justify-content:center;">
+        <div style="display:flex; flex-direction:column; align-items:flex-end; justify-content:center; min-width: 140px;">
             ${statusIcon}
             ${actions}
         </div>
@@ -736,16 +1100,13 @@ function renderAllMeds() {
     document.getElementById("refillAlertsContainer").innerHTML = "";
     return;
   }
-  const lowMeds = meds.filter(m => m.pills <= 5);
+  const lowMeds = meds.filter(m => m.pills <= 3);
   const alertsContainer = document.getElementById("refillAlertsContainer");
   if (lowMeds.length > 0) {
     alertsContainer.innerHTML = lowMeds.map(m => `
-       <div style="background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 8px; padding: 16px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
-         <div>
-            <strong style="color: var(--btn-red);">⚠ Refill Alert: ${m.name}</strong><br>
-            <small style="color: var(--text-light);">Only ${m.pills} pills remaining.</small>
-         </div>
-         <button class="btn-small btn-primary" onclick="expressRefill('${m.serverRxId}', ${m.pills})">+ Request Refill</button>
+       <div style="background: #FEF2F2; border: 1px solid #FCA5A5; border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+          <strong style="color: var(--btn-red);">⚠ Refill Alert: ${m.name}</strong><br>
+          <small style="color: var(--text-light);">Only ${m.pills} pills remaining.</small>
        </div>
      `).join("");
   } else {
@@ -768,13 +1129,17 @@ function renderAllMeds() {
             Time: ${med.time || '-'} | Route: ${med.route}
         </div>
         <div class="med-subtitle" style="font-size: 0.8rem;">
-           <span style="color: ${med.pills <= 5 ? 'var(--btn-red)' : 'var(--btn-teal)'}; font-weight: 600;">
+           <span style="color: ${med.pills <= 3 ? 'var(--btn-red)' : 'var(--btn-teal)'}; font-weight: 600;">
              ${med.pills || 0} pills left
            </span>
         </div>
       </div>
       <div style="display:flex; flex-direction:column; gap:8px;">
-          <button class="btn-small btn-secondary" onclick="openSideEffect('${med.serverRxId}', event)">Notes</button>
+          <div style="display:flex; gap:8px; align-items:center; justify-content:flex-end;">
+            ${med.isPaused ? '<span style="color:var(--btn-red); font-size:0.75rem; font-weight:bold; text-transform:uppercase;">Paused</span>' : ''}
+            <button class="btn-small ${med.isPaused ? 'btn-green' : 'btn-orange'}" onclick="togglePauseMed('${med.serverRxId}', ${med.isPaused ? true : false}, event)">${med.isPaused ? 'Resume' : 'Pause'}</button>
+            <button class="btn-small btn-secondary" onclick="openSideEffect('${med.serverRxId}', event)">Notes</button>
+          </div>
           <div style="display:flex; gap:8px;">
               <button class="btn-small btn-secondary" onclick="openEditMed('${med.rxId}', '${med.name}', event)">Edit</button>
               <button class="btn-small btn-danger" onclick="deleteMed('${med.rxId}', '${med.name}', event)">Delete</button>
@@ -784,21 +1149,58 @@ function renderAllMeds() {
   `}).join("");
 }
 
-window.expressRefill = async function (serverRxId, currentPills) {
-  if (!serverRxId || serverRxId === 'undefined') return alert("Please sync this prescription to the server first.");
-  const newCount = parseInt(currentPills || 0) + 30;
+window.togglePauseMed = async function (serverRxId, currentPaused, event) {
+  if (event) event.stopPropagation();
+  const newState = !currentPaused;
+  console.log(`Toggling pause for ${serverRxId} from ${currentPaused} to ${newState}`);
   try {
-    await fetch(`${API_BASE}/prescriptions/${serverRxId}`, {
+    const res = await fetch(`${API_BASE}/prescriptions/${serverRxId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ total_pills: newCount })
+      body: JSON.stringify({ is_paused: newState })
     });
-    showToast("Medicine practically refilled (+30 pills)!");
-    await loadServerData();
+    const data = await res.json();
+    if (data.success) {
+      await loadServerData();
+      todaysReminders
+        .filter(r => r.serverRxId === serverRxId)
+        .forEach(r => {
+          r.isPaused = newState;
+          if (!newState) triggeredToday.delete(r.id);
+        });
+      renderTodays();
+      if (btnShowAll.classList.contains('active')) renderAllMeds();
+      showToast(newState ? "Reminders Paused" : "Reminders Resumed");
+    } else {
+      console.error("Pause toggle server error", data);
+      showToast("Pause/Resume failed: " + (data.error || "unknown"), "error");
+    }
   } catch (err) {
-    alert("Failed to refill.");
+    console.error("Pause toggle failed", err);
+    showToast("Pause/Resume network error", "error");
+  }
+};
+
+async function triggerSMSReminder(phone, medName) {
+  const message = `SafeMeds Alert: It is time to take your ${medName}. Please stay healthy!`;
+  try {
+    const response = await fetch(`${API_BASE}/send-reminder`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        phoneNumber: phone,
+        message: message,
+      }),
+    });
+    const result = await response.json();
+    if (result.success) {
+      console.log("SMS reminder sent!");
+    }
+  } catch (err) {
+    console.error("Failed to trigger SMS:", err);
   }
 }
+
 
 function renderPrescriptions() {
   if (prescriptions.length === 0) {
@@ -902,32 +1304,65 @@ document.getElementById('saveEditMedBtn').addEventListener('click', async () => 
   const oldName = document.getElementById('editMedOriginalName').value;
   const rx = prescriptions.find(r => r.id === rxId);
   const med = rx.medications.find(m => m.name === oldName);
-  const newName = document.getElementById('editMedName').value;
+  const newName = document.getElementById('editMedName').value.trim();
   const newDosage = document.getElementById('editMedDosage').value;
   const newFreq = document.getElementById('editMedFreq').value;
   const newRoute = document.getElementById('editMedRoute').value;
-  const newTimeline = document.getElementById('editMedTimeline').value || '-';
-  const newPills = document.getElementById('editMedPills').value || 0;
+  const newPills = parseInt(document.getElementById('editMedPills').value || 0, 10) || 0;
   const newTime = document.getElementById('editMedTime').value || '';
+
   await toggleBtnLoading(btn, true);
-  if (med.serverRxId) {
-    await fetch(`${API_BASE}/prescriptions/${med.serverRxId}`, { method: 'DELETE' });
-  }
-  const metaString = JSON.stringify({ age: rx.age, gender: rx.gender, symptoms: rx.symptoms, height: rx.height, weight: rx.weight, temp: rx.temp });
-  const patientId = await getOrCreateUser(rx.patientName, 'patient');
-  let doctorId = null;
-  if (rx.doctorName && rx.doctorName !== '-') doctorId = await getOrCreateUser(rx.doctorName, 'doctor');
-  const medId = await getOrCreateMedication(newName, newRoute);
-  if (medId && patientId) {
-    const newRxId = await createPrescription(patientId, doctorId, medId, newDosage, newFreq, metaString, rx.date, newPills);
-    if (newRxId) {
-      await createSchedule(newRxId, newTime, newDosage);
+  try {
+    if (!med || !med.serverRxId) {
+      showToast("This medicine isn't saved to the server yet — cannot edit.", "error");
+      return;
     }
+    const metaString = JSON.stringify({ age: rx.age, gender: rx.gender, symptoms: rx.symptoms, height: rx.height, weight: rx.weight, temp: rx.temp });
+
+    // If the drug name or route changed, point this prescription at a different medications row.
+    let newMedicationId = null;
+    if (newName.toLowerCase() !== (med.name || '').toLowerCase() || newRoute !== med.route) {
+      newMedicationId = await getOrCreateMedication(newName, newRoute);
+    }
+
+    const putBody = {
+      dosage: newDosage,
+      frequency: newFreq,
+      instructions: metaString,
+      total_pills: newPills,
+    };
+    if (newMedicationId) putBody.medication_id = newMedicationId;
+
+    const rxResp = await fetch(`${API_BASE}/prescriptions/${med.serverRxId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(putBody),
+    });
+    const rxJson = await rxResp.json();
+    if (!rxJson.success) throw new Error(rxJson.error || "Prescription update failed");
+
+    // Update the schedule's time and dosage in place (preserves schedule_id + adherence history)
+    if (med.serverSchId) {
+      let t = newTime;
+      if (t && t.length === 5) t = t + ":00";
+      const schResp = await fetch(`${API_BASE}/schedules/${med.serverSchId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ time_of_day: t || undefined, dosage_amount: newDosage || undefined }),
+      });
+      const schJson = await schResp.json();
+      if (!schJson.success) console.warn("Schedule update returned error:", schJson);
+    }
+
+    await loadServerData();
+    showToast("Medicine updated successfully.");
+  } catch (err) {
+    console.error("saveEditMed failed:", err);
+    showToast("Failed to update medicine: " + err.message, "error");
+  } finally {
+    document.getElementById('editMedModal').classList.remove('active');
+    await toggleBtnLoading(btn, false);
   }
-  document.getElementById('editMedModal').classList.remove('active');
-  await loadServerData();
-  await toggleBtnLoading(btn, false);
-  showToast("Medicine updated successfully.");
 });
 
 document.getElementById('cancelEditMedBtn').addEventListener('click', () => {
@@ -1018,8 +1453,6 @@ document.getElementById('saveEditRxBtn').addEventListener('click', async () => {
   const btn = document.getElementById('saveEditRxBtn');
   const rxId = document.getElementById('editRxId').value;
   const rx = prescriptions.find(r => r.id === rxId);
-  const pName = document.getElementById('editRxPatient').value || '-';
-  const dName = document.getElementById('editRxDoctor').value || '-';
   const metaString = JSON.stringify({
     age: document.getElementById('editRxAge').value || '-',
     gender: document.getElementById('editRxGender').value || '-',
@@ -1028,29 +1461,64 @@ document.getElementById('saveEditRxBtn').addEventListener('click', async () => {
     weight: document.getElementById('editRxWeight').value || '-',
     temp: document.getElementById('editRxTemp').value || '-'
   });
-  const date = document.getElementById('editRxDate').value || '-';
+  const date = document.getElementById('editRxDate').value || undefined;
+
   await toggleBtnLoading(btn, true);
-  if (rx.originalRxIds) {
-    for (let id of rx.originalRxIds) {
-      await fetch(`${API_BASE}/prescriptions/${id}`, { method: 'DELETE' });
-    }
-  }
-  const patientId = await getOrCreateUser(pName, 'patient');
-  let doctorId = null;
-  if (dName !== '-') doctorId = await getOrCreateUser(dName, 'doctor');
-  for (let med of currentEditRxMeds) {
-    const medId = await getOrCreateMedication(med.name, med.route);
-    if (medId && patientId) {
-      const newRxId = await createPrescription(patientId, doctorId, medId, med.dosage, med.freq, metaString, date, med.pills);
-      if (newRxId) {
-        await createSchedule(newRxId, med.time, med.dosage);
+  try {
+    // Update each existing prescription + schedule in place.
+    // This preserves prescription_id, schedule_id, and adherence_logs history.
+    const original = rx.medications || [];
+    for (let i = 0; i < currentEditRxMeds.length; i++) {
+      const med = currentEditRxMeds[i];
+      const ref = original[i]; // Same index — edit modal never reorders, only mutates in place
+      if (!ref || !ref.serverRxId) {
+        console.warn("No server id for edited row; skipping:", med);
+        continue;
+      }
+
+      // If name or route changed, swap the medication_id; otherwise leave it.
+      let newMedicationId = null;
+      if ((med.name || '').toLowerCase() !== (ref.name || '').toLowerCase() || med.route !== ref.route) {
+        newMedicationId = await getOrCreateMedication(med.name, med.route);
+      }
+
+      const putBody = {
+        dosage: med.dosage,
+        frequency: med.freq,
+        instructions: metaString,
+        total_pills: parseInt(med.pills || 0, 10) || 0,
+      };
+      if (date) putBody.start_date = date;
+      if (newMedicationId) putBody.medication_id = newMedicationId;
+
+      const rxResp = await fetch(`${API_BASE}/prescriptions/${ref.serverRxId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(putBody),
+      });
+      const rxJson = await rxResp.json();
+      if (!rxJson.success) throw new Error(`Prescription ${ref.serverRxId}: ${rxJson.error || 'update failed'}`);
+
+      if (ref.serverSchId) {
+        let t = med.time;
+        if (t && t.length === 5) t = t + ":00";
+        await fetch(`${API_BASE}/schedules/${ref.serverSchId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ time_of_day: t || undefined, dosage_amount: med.dosage || undefined }),
+        });
       }
     }
+
+    await loadServerData();
+    showToast("Prescription updated successfully.");
+  } catch (err) {
+    console.error("saveEditRx failed:", err);
+    showToast("Failed to update prescription: " + err.message, "error");
+  } finally {
+    document.getElementById('editRxModal').classList.remove('active');
+    await toggleBtnLoading(btn, false);
   }
-  document.getElementById('editRxModal').classList.remove('active');
-  await loadServerData();
-  await toggleBtnLoading(btn, false);
-  showToast("Prescription updated successfully.");
 });
 
 document.getElementById('cancelEditRxBtn').addEventListener('click', () => {
@@ -1076,24 +1544,50 @@ voiceBtn.addEventListener("click", () => {
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = new SpeechRecognition();
   recognition.continuous = false;
-  recognition.lang = 'en-US';
+  recognition.interimResults = false;
+  // Prefer Indian English; fall back to the browser default locale if unsupported.
+  recognition.lang = (navigator.language && navigator.language.startsWith("en")) ? navigator.language : "en-IN";
   recognition.onstart = function () {
     showToast("Mic Active: Speak your prescription details...");
   };
-  recognition.onresult = function (event) {
+  recognition.onresult = async function (event) {
     const transcript = event.results[0][0].transcript;
     openAddRxModal();
+    const sympInput = document.getElementById("rxSymptoms");
     document.getElementById("rxDate").valueAsDate = new Date();
-    document.getElementById("rxSymptoms").value = "Voice Transcription: " + transcript;
-    const firstMedName = medicationsContainer.querySelector('.med-name');
-    if (firstMedName && transcript) {
-      firstMedName.value = transcript;
-    }
+    sympInput.value = "Voice Transcription: " + transcript;
+
+    // Use the extraction engine to parse the spoken text
+    await processExtractedText(transcript, sympInput);
   };
   recognition.onerror = function (event) {
-    showToast("Voice error: " + event.error);
+    const code = event.error;
+    let msg;
+    switch (code) {
+      case "not-allowed":
+      case "service-not-allowed":
+        msg = "Microphone access blocked. Enable it in your browser's site settings and try again.";
+        break;
+      case "no-speech":
+        msg = "No speech detected. Please try again and speak clearly.";
+        break;
+      case "audio-capture":
+        msg = "No microphone found. Please connect one and retry.";
+        break;
+      case "network":
+        msg = "Voice service needs an internet connection.";
+        break;
+      default:
+        msg = "Voice error: " + code;
+    }
+    showToast(msg, "error");
   };
-  recognition.start();
+  try {
+    recognition.start();
+  } catch (err) {
+    console.error("Voice start failed:", err);
+    showToast("Could not start voice recognition. Please try again.", "error");
+  }
 });
 
 async function processExtractedText(text, sympInput) {
@@ -1119,9 +1613,9 @@ async function processExtractedText(text, sympInput) {
           const clone = medRowTemplate.content.cloneNode(true);
           const nameInput = clone.querySelector('.med-name');
           const doseInput = clone.querySelector('.med-dosage');
-          const freqInput = clone.querySelector('.med-frequency');
+          const freqInput = clone.querySelector('.med-freq');
           const routeInput = clone.querySelector('.med-route');
-          const durInput = clone.querySelector('.med-duration');
+          const durInput = clone.querySelector('.med-timeline');
           if (nameInput) nameInput.value = med.name;
           let combinedDose = [];
           if (med.quantity && med.quantity !== "1") combinedDose.push(med.quantity);
@@ -1168,45 +1662,47 @@ fileInput.addEventListener("change", async (e) => {
       const sympInput = document.getElementById("rxSymptoms");
       sympInput.value = "Scanning image for text...";
       try {
-        if (typeof Tesseract !== 'undefined') {
-          const result = await Tesseract.recognize(file, 'eng');
-          const text = result.data.text;
-          await processExtractedText(text, sympInput);
+        const base64Image = await fileToBase64(file);
+        const response = await fetch(`${API_BASE}/ocr`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image: base64Image })
+        });
+        const result = await response.json();
+        if (result.success) {
+          await processExtractedText(result.text, sympInput);
         } else {
-          sympInput.value = "Tesseract failed to load.";
+          const detail = result.details ? ` (${result.details})` : "";
+          sympInput.value = "OCR failed: " + (result.error || "Unknown error") + detail;
+          console.error("OCR server error:", result);
         }
       } catch (err) {
         console.error("OCR failed", err);
-        sympInput.value = "OCR Failed.";
+        sympInput.value = "OCR Failed: " + (err.message || "network or payload error");
       }
     } else if (file.type === "application/pdf") {
       openAddRxModal();
       document.getElementById("rxDate").valueAsDate = new Date();
       const sympInput = document.getElementById("rxSymptoms");
-      sympInput.value = "Loading and rasterizing PDF document...";
+      sympInput.value = "Scanning PDF with Google Vision API...";
       try {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        const page = await pdf.getPage(1);
-        const scale = 2.0;
-        const viewport = page.getViewport({ scale });
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        canvas.height = viewport.height;
-        canvas.width = viewport.width;
-        await page.render({ canvasContext: context, viewport }).promise;
-        const imgDataUrl = canvas.toDataURL('image/png');
-        sympInput.value = "Scanning rasterized PDF with OCR...";
-        if (typeof Tesseract !== 'undefined') {
-          const result = await Tesseract.recognize(imgDataUrl, 'eng');
-          const text = result.data.text;
-          await processExtractedText(text, sympInput);
+        const base64Data = await fileToBase64(file);
+        const response = await fetch(`${API_BASE}/ocr-pdf`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pdfBase64: base64Data })
+        });
+        const result = await response.json();
+        if (result.success) {
+          await processExtractedText(result.text, sympInput);
         } else {
-          sympInput.value = "Tesseract failed to load.";
+          const detail = result.details ? ` (${result.details})` : "";
+          sympInput.value = "PDF OCR failed: " + (result.error || "Unknown error") + detail;
+          console.error("PDF OCR server error:", result);
         }
       } catch (err) {
-        console.error("PDF Parsing failed", err);
-        sympInput.value = "PDF OCR Failed.";
+        console.error("PDF OCR failed", err);
+        sympInput.value = "PDF OCR Failed: " + (err.message || "network or payload error");
       }
     } else {
       openAddRxModal();
@@ -1214,6 +1710,15 @@ fileInput.addEventListener("change", async (e) => {
     }
   }
 });
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+  });
+}
 
 function addNewMedRow() {
   const clone = medRowTemplate.content.cloneNode(true);
@@ -1369,6 +1874,42 @@ if (profileBadge) {
 
 if (closeProfileBtn) {
   closeProfileBtn.addEventListener("click", () => profileModal.classList.remove("active"));
+}
+
+if (logoutBtn) {
+  logoutBtn.addEventListener("click", () => {
+    if (confirm("Are you sure you want to logout? This will clear your current profile data from this device.")) {
+      localStorage.removeItem('safemeds_user');
+      window.location.reload();
+    }
+  });
+}
+
+if (updatePhoneBtn) {
+  updatePhoneBtn.addEventListener("click", async () => {
+    const newPhone = normalizePhoneIN(updatePhoneInput.value.trim());
+    if (newPhone.length !== 10) return alert("Please enter a valid 10-digit phone number.");
+    const uData = JSON.parse(localStorage.getItem('safemeds_user'));
+    await toggleBtnLoading(updatePhoneBtn, true);
+    try {
+      const resp = await fetch(`${API_BASE}/users/${uData.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone_number: newPhone })
+      });
+      const data = await resp.json();
+      if (data.success) {
+        uData.phone = newPhone;
+        localStorage.setItem('safemeds_user', JSON.stringify(uData));
+        document.getElementById("profilePhoneDisplay").textContent = newPhone;
+        updatePhoneInput.value = "";
+        showToast("Phone number updated!");
+      }
+    } catch (err) {
+      console.error("Update Phone Error:", err);
+    }
+    await toggleBtnLoading(updatePhoneBtn, false);
+  });
 }
 
 if (deleteAccountBtn) {

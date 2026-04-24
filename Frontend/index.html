@@ -9,7 +9,6 @@
   <link rel="stylesheet" type="text/css" href="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps.css" />
   <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/maps/maps-web.min.js"></script>
   <script src="https://api.tomtom.com/maps-sdk-for-web/cdn/6.x/6.25.0/services/services-web.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -38,6 +37,10 @@
         <button id="viewHistoryBtn" class="btn-small btn-secondary"
           style="background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.2); margin: 0;">View
           History</button>
+        <button id="enableNotifsBtn" class="btn-small btn-secondary"
+          title="Enable desktop notifications"
+          style="display: none; background: rgba(0,0,0,0.2); color: white; border: 1px solid rgba(255,255,255,0.2); margin: 0;">🔔
+          Enable Notifications</button>
       </div>
     </header>
 
@@ -359,6 +362,18 @@
       </div>
     </div>
   </template>
+  <div id="authChoiceModal" class="modal">
+    <div class="modal-content" style="max-width: 400px; text-align: center; padding: 40px;">
+      <h2 style="margin-top: 0; color: var(--btn-blue);">Welcome to SafeMeds</h2>
+      <p style="color: var(--muted); font-size: 1.1rem; margin-bottom: 30px;">Your personal medication adherence companion.</p>
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <button id="choiceLoginBtn" class="btn-primary"
+          style="width: 100%; padding: 16px; font-size: 1.1rem; font-weight: bold;">Login to Profile</button>
+        <button id="choiceSignupBtn" class="btn-add"
+          style="width: 100%; padding: 16px; font-size: 1.1rem; font-weight: bold; margin:0;">Create New Account</button>
+      </div>
+    </div>
+  </div>
 
   <div id="onboardModal" class="modal">
     <div class="modal-content" style="max-width: 400px; text-align: center;">
@@ -377,7 +392,10 @@
         <input type="checkbox" id="onboardSmsToggle" style="width: auto;">
         <label style="margin: 0; font-size: 0.9rem;">Enable automated SMS Reminders</label>
       </div>
-      <button id="onboardBtn" class="btn-add" style="width: 100%; margin: 0;">Save Profile</button>
+      <div style="display: flex; gap: 12px; margin-top: 10px;">
+        <button id="onboardBtn" class="btn-add" style="flex: 2; margin: 0;">Save Profile</button>
+        <button id="backOnboardBtn" class="btn-small btn-secondary" style="flex: 1; margin: 0; padding:14px;">Back</button>
+      </div>
     </div>
   </div>
 
@@ -425,10 +443,17 @@
         style="background: rgba(0,0,0,0.03); padding: 20px; border-radius: 12px; margin-bottom: 24px; border: 1px solid var(--border); text-align:left;">
         <strong style="color:var(--text-main);">Name:</strong> <span id="profileNameDisplay"></span><br><br>
         <strong style="color:var(--text-main);">Phone:</strong> <span id="profilePhoneDisplay"></span>
+        <div style="margin-top: 16px; border-top: 1px solid var(--border); padding-top: 16px;">
+          <label style="font-size: 0.8rem; color: var(--muted); display: block; margin-bottom: 6px;">Update Phone Number</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="tel" id="updatePhoneInput" placeholder="New Phone Number" style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border); font-size: 0.9rem;">
+            <button id="updatePhoneBtn" class="btn-small btn-primary" style="padding: 8px 12px; font-size: 0.8rem;">Update</button>
+          </div>
+        </div>
       </div>
       <div style="display: flex; gap: 12px; flex-direction:column;">
-        <button id="deleteAccountBtn" class="btn-danger btn-small" style="margin: 0; padding:14px; font-weight:bold;">⚠️
-          Permanently Delete Account</button>
+        <button id="logoutBtn" class="btn-primary btn-small" style="margin: 0; padding:14px; font-weight:bold;">🚪 Logout of Current Profile</button>
+        <button id="deleteAccountBtn" class="btn-danger btn-small" style="margin: 0; padding:14px; font-weight:bold;">⚠️ Permanently Delete Account</button>
         <button id="closeProfileBtn" class="btn-small btn-secondary" style="margin: 0; padding:14px;">Cancel</button>
       </div>
     </div>

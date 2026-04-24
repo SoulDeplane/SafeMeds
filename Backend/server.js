@@ -1,12 +1,13 @@
 import pg from "pg";
 import dotenv from "dotenv";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import express from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
-import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 import { spawn } from "child_process";
+import twilio from "twilio";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,10 +15,59 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const port = 3000;
 app.use(cors());
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// Raise payload limit — OCR/PDF uploads arrive as base64 strings and routinely
+// exceed the 100 KB body-parser default (a 3 MB photo is ~4 MB once base64-encoded).
+app.use(bodyParser.json({ limit: "25mb" }));
+app.use(bodyParser.urlencoded({ limit: "25mb", extended: true }));
 app.use(express.static("../Frontend"));
 dotenv.config();
+
+// Gemini 1.5 Flash replaces Google Cloud Vision for OCR. Client is lazy-inited
+// so the server still boots when the key is missing (same pattern as Twilio).
+let geminiModel = null;
+function getGeminiModel() {
+  if (geminiModel) return geminiModel;
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) return null;
+  const client = new GoogleGenerativeAI(key);
+  // gemini-2.5-flash is the current stable multimodal Flash model on the
+  // v1beta endpoint; the 1.5 alias was retired.
+  geminiModel = client.getGenerativeModel({ model: "gemini-2.5-flash" });
+  return geminiModel;
+}
+
+async function extractTextWithGemini(base64Data, mimeType) {
+  const model = getGeminiModel();
+  if (!model) {
+    const err = new Error("GEMINI_API_KEY missing from .env");
+    err.code = "NO_API_KEY";
+    throw err;
+  }
+  const prompt =
+    "Transcribe all visible text from this document exactly as it appears. " +
+    "Preserve line breaks and ordering. Output only the raw text — no commentary, " +
+    "no Markdown, no explanations.";
+  const parts = [prompt, { inlineData: { data: base64Data, mimeType } }];
+
+  // Gemini Flash occasionally returns 503 "model overloaded" under spikes.
+  // Retry transiently with backoff; bubble up anything else.
+  const delays = [1500, 4000];
+  let lastErr;
+  for (let attempt = 0; attempt <= delays.length; attempt++) {
+    try {
+      const result = await model.generateContent(parts);
+      return result.response.text() || "";
+    } catch (err) {
+      lastErr = err;
+      const msg = String(err.message || "");
+      const overloaded = msg.includes("503") || /overload|unavailable/i.test(msg);
+      if (!overloaded || attempt === delays.length) throw err;
+      await new Promise((r) => setTimeout(r, delays[attempt]));
+    }
+  }
+  throw lastErr;
+}
+
 const db = new pg.Client({
   host: process.env.DB_HOST,
   password: process.env.DB_PASSWORD,
@@ -29,10 +79,114 @@ async function connectToDatabase() {
   try {
     await db.connect();
     console.log("Database connection successful");
+    // Add is_paused column if it doesn't exist
+    await db.query(`ALTER TABLE prescriptions ADD COLUMN IF NOT EXISTS is_paused BOOLEAN DEFAULT FALSE;`);
+
+    // Preserve adherence history even after a prescription is deleted:
+    //   1. Relax adherence_logs.prescription_id so it can be NULL.
+    //   2. Swap ON DELETE CASCADE for ON DELETE SET NULL on the FK.
+    //   3. Keep a medication_name snapshot on the log row so history stays
+    //      self-contained when the original prescription/medication is gone.
+    await db.query(`ALTER TABLE adherence_logs ALTER COLUMN prescription_id DROP NOT NULL;`);
+    await db.query(`ALTER TABLE adherence_logs ADD COLUMN IF NOT EXISTS medication_name TEXT;`);
+    await db.query(`ALTER TABLE adherence_logs ADD COLUMN IF NOT EXISTS dosage TEXT;`);
+    await db.query(`ALTER TABLE adherence_logs ADD COLUMN IF NOT EXISTS route TEXT;`);
+    await db.query(`
+      DO $$
+      BEGIN
+        IF EXISTS (
+          SELECT 1 FROM pg_constraint
+           WHERE conrelid = 'adherence_logs'::regclass
+             AND conname = 'adherence_logs_prescription_id_fkey'
+        ) THEN
+          ALTER TABLE adherence_logs DROP CONSTRAINT adherence_logs_prescription_id_fkey;
+        END IF;
+        ALTER TABLE adherence_logs
+          ADD CONSTRAINT adherence_logs_prescription_id_fkey
+          FOREIGN KEY (prescription_id) REFERENCES prescriptions(prescription_id) ON DELETE SET NULL;
+      END $$;
+    `);
+    // Backfill medication_name/dosage/route on any existing rows that still
+    // have their prescription + medication available.
+    await db.query(`
+      UPDATE adherence_logs a
+         SET medication_name = COALESCE(a.medication_name, m.medication_name),
+             dosage          = COALESCE(a.dosage, p.dosage),
+             route           = COALESCE(a.route, m.dosage_form)
+        FROM prescriptions p
+        LEFT JOIN medications m ON p.medication_id = m.medication_id
+       WHERE a.prescription_id = p.prescription_id
+         AND (a.medication_name IS NULL OR a.dosage IS NULL OR a.route IS NULL);
+    `);
+
+    await reconcilePhantomPatients();
   } catch (error) {
     console.log(error);
   }
 }
+
+// One-shot data repair: earlier builds of the edit flow called
+// getOrCreateUser(name, 'patient') without a phone, which generated a
+// phantom user with email '<name>_nophone_patient@safemeds.local' and
+// phone_number = 'nophone'. Prescriptions created during editing got
+// attached to that phantom instead of the real patient, so after re-login
+// the real user's loadServerData finds nothing. This reattaches every
+// phantom-owned prescription + adherence log to the real user with the
+// same full_name, then removes the phantom row. Idempotent — safe to
+// run on every startup.
+async function reconcilePhantomPatients() {
+  try {
+    const phantoms = await db.query(
+      `SELECT user_id, full_name
+         FROM users
+        WHERE role = 'patient'
+          AND (email LIKE '%\\_nophone\\_patient@safemeds.local' ESCAPE '\\'
+               OR phone_number = 'nophone')`
+    );
+    for (const ph of phantoms.rows) {
+      const real = await db.query(
+        `SELECT user_id FROM users
+          WHERE role = 'patient'
+            AND full_name = $1
+            AND user_id <> $2
+            AND (phone_number IS NOT NULL AND phone_number <> 'nophone')
+          ORDER BY created_at ASC
+          LIMIT 1`,
+        [ph.full_name, ph.user_id]
+      );
+      if (real.rows.length === 0) {
+        console.log(`[reconcile] Keeping phantom '${ph.full_name}' (${ph.user_id}) — no real counterpart`);
+        continue;
+      }
+      const realId = real.rows[0].user_id;
+      const movedRx = await db.query(
+        `UPDATE prescriptions SET patient_id = $1 WHERE patient_id = $2 RETURNING prescription_id`,
+        [realId, ph.user_id]
+      );
+      const movedLogs = await db.query(
+        `UPDATE adherence_logs SET patient_id = $1 WHERE patient_id = $2 RETURNING log_id`,
+        [realId, ph.user_id]
+      );
+      const movedReminders = await db.query(
+        `UPDATE reminders SET patient_id = $1 WHERE patient_id = $2 RETURNING reminder_id`,
+        [realId, ph.user_id]
+      );
+      await db.query(`DELETE FROM users WHERE user_id = $1`, [ph.user_id]);
+      console.log(`[reconcile] '${ph.full_name}': moved ${movedRx.rowCount} Rx, ${movedLogs.rowCount} logs, ${movedReminders.rowCount} reminders from phantom ${ph.user_id} to real ${realId}`);
+    }
+
+    // Clear the literal 'nophone' string on any remaining rows (older doctor records).
+    const cleaned = await db.query(
+      `UPDATE users SET phone_number = NULL WHERE phone_number = 'nophone' RETURNING user_id`
+    );
+    if (cleaned.rowCount > 0) {
+      console.log(`[reconcile] Cleared 'nophone' string on ${cleaned.rowCount} rows`);
+    }
+  } catch (err) {
+    console.error("[reconcile] Repair failed:", err);
+  }
+}
+
 connectToDatabase().then(startReminderDispatcher);
 
 const VALID_REMINDER_TYPES = ["push", "sms", "email", "in_app"];
@@ -70,6 +224,7 @@ const dispatchDueReminders = async () => {
       LEFT JOIN medications m ON p.medication_id = m.medication_id
       WHERE r.status = 'pending'
         AND r.reminder_time <= NOW()
+        AND (p.is_paused IS FALSE OR p.is_paused IS NULL)
       ORDER BY r.reminder_time ASC`,
   );
 
@@ -413,6 +568,31 @@ app.post("/api/users", async (req, res) => {
   }
 });
 
+// Check if user exists by name and phone (profiles keyed by {Name, Phone})
+app.get("/api/users/check", async (req, res) => {
+  try {
+    const { name, phone } = req.query;
+    const digits = String(phone || "").replace(/\D/g, "").slice(-10);
+    const result = await db.query(
+      `SELECT user_id, full_name, phone_number, email
+         FROM users
+        WHERE full_name = $1
+          AND regexp_replace(COALESCE(phone_number,''), '\\D', '', 'g') LIKE '%' || $2
+          AND role = 'patient'
+        LIMIT 1`,
+      [name, digits],
+    );
+    const exists = result.rows.length > 0;
+    res.json({
+      success: true,
+      exists,
+      user: exists ? result.rows[0] : null,
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // 4. PUT - Update user
 app.put("/api/users/:id", async (req, res) => {
   try {
@@ -615,23 +795,33 @@ app.post("/api/prescriptions", async (req, res) => {
 app.put("/api/prescriptions/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    // ✅ ADD THIS LINE - extract variables from request body
-    const { dosage, frequency, start_date, end_date, instructions, is_active, total_pills } =
+    const { medication_id, dosage, frequency, start_date, end_date, instructions, is_active, total_pills, is_paused } =
       req.body;
 
-    const result = await db.query(
-      `UPDATE prescriptions 
-       SET dosage = COALESCE($1, dosage),
-           frequency = COALESCE($2, frequency),
-           start_date = COALESCE($3, start_date),
-           end_date = COALESCE($4, end_date),
-           instructions = COALESCE($5, instructions),
-           is_active = COALESCE($6, is_active),
-           total_pills = COALESCE($7, total_pills)
-       WHERE prescription_id = $8
-       RETURNING *`,
-      [dosage, frequency, start_date, end_date, instructions, is_active, total_pills, id],
-    );
+    const fields = {
+      medication_id, dosage, frequency, start_date, end_date, instructions, is_active, total_pills, is_paused
+    };
+    
+    const updates = [];
+    const params = [];
+    let paramIndex = 1;
+
+    for (const [key, value] of Object.entries(fields)) {
+      if (value !== undefined) {
+        updates.push(`${key} = $${paramIndex++}`);
+        params.push(value);
+      }
+    }
+
+    if (updates.length === 0) {
+      return res.status(400).json({ success: false, error: "No fields to update" });
+    }
+
+    params.push(id);
+    const query = `UPDATE prescriptions SET ${updates.join(", ")} WHERE prescription_id = $${paramIndex} RETURNING *`;
+    
+    console.log(`Executing Update: ${query} with params:`, params);
+    const result = await db.query(query, params);
 
     if (result.rows.length === 0) {
       return res.status(404).json({
@@ -678,9 +868,10 @@ app.delete("/api/prescriptions/:id", async (req, res) => {
 app.put("/api/prescriptions/:id/take", async (req, res) => {
   try {
     const { id } = req.params;
-    
+    const { schedule_id, scheduled_time } = req.body;
+
     const result = await db.query(
-      `UPDATE prescriptions 
+      `UPDATE prescriptions
        SET total_pills = GREATEST(0, total_pills - 1)
        WHERE prescription_id = $1
        RETURNING *`,
@@ -691,17 +882,64 @@ app.put("/api/prescriptions/:id/take", async (req, res) => {
       return res.status(404).json({ success: false, error: "Prescription not found" });
     }
 
+    const updated = result.rows[0];
+    const pId = updated.patient_id;
+
+    // Snapshot medication info so history survives a future prescription delete.
+    let snapName = null, snapDosage = updated.dosage || null, snapRoute = null;
     try {
-        const pId = result.rows[0].patient_id;
+      const snap = await db.query(
+        `SELECT m.medication_name, m.dosage_form
+           FROM medications m WHERE m.medication_id = $1`,
+        [updated.medication_id]
+      );
+      if (snap.rows[0]) {
+        snapName = snap.rows[0].medication_name;
+        snapRoute = snap.rows[0].dosage_form;
+      }
+    } catch (_) {}
+
+    try {
         await db.query(`
-            INSERT INTO adherence_logs (patient_id, prescription_id, scheduled_time, actual_time, status)
-            VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'taken')
-        `, [pId, id]);
+            INSERT INTO adherence_logs (patient_id, prescription_id, schedule_id, scheduled_time, actual_time, status, medication_name, dosage, route)
+            VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, 'taken', $5, $6, $7)
+        `, [pId, id, schedule_id || null, scheduled_time || new Date().toISOString(), snapName, snapDosage, snapRoute]);
     } catch(err) {
         console.error("Adherence Log failed: ", err);
     }
 
-    res.json({ success: true, data: result.rows[0] });
+    // Refill check: when pills drop to 3 or below, notify the user immediately
+    const refillNeeded = updated.total_pills <= 3;
+    let refillSms = null;
+    let medicationName = null;
+    if (refillNeeded) {
+      try {
+        const meta = await db.query(
+          `SELECT u.phone_number, m.medication_name
+             FROM prescriptions p
+             LEFT JOIN users u ON p.patient_id = u.user_id
+             LEFT JOIN medications m ON p.medication_id = m.medication_id
+            WHERE p.prescription_id = $1`,
+          [id]
+        );
+        const row = meta.rows[0] || {};
+        medicationName = row.medication_name || "your medication";
+        if (row.phone_number) {
+          const msg = `SafeMeds: Only ${updated.total_pills} pill(s) left of ${medicationName}. Please refill soon.`;
+          refillSms = await sendSms(row.phone_number, msg);
+        }
+      } catch (err) {
+        console.error("Refill notify failed:", err);
+      }
+    }
+
+    res.json({
+      success: true,
+      data: updated,
+      refill_needed: refillNeeded,
+      medication_name: medicationName,
+      refill_sms: refillSms,
+    });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -711,18 +949,24 @@ app.put("/api/prescriptions/:id/take", async (req, res) => {
 app.put("/api/prescriptions/:id/skip", async (req, res) => {
   try {
     const { id } = req.params;
-    const { reason } = req.body;
-    
-    // Find patient_id for the prescription
-    const pRes = await db.query('SELECT patient_id FROM prescriptions WHERE prescription_id = $1', [id]);
+    const { reason, schedule_id, scheduled_time } = req.body;
+
+    // Pull patient + medication snapshot in one query
+    const pRes = await db.query(
+      `SELECT p.patient_id, p.dosage, m.medication_name, m.dosage_form
+         FROM prescriptions p
+         LEFT JOIN medications m ON p.medication_id = m.medication_id
+        WHERE p.prescription_id = $1`,
+      [id]
+    );
     if(pRes.rows.length === 0) return res.status(404).json({ success: false, error: "Prescription not found" });
-    const pId = pRes.rows[0].patient_id;
+    const row = pRes.rows[0];
 
     const result = await db.query(`
-        INSERT INTO adherence_logs (patient_id, prescription_id, scheduled_time, actual_time, status, notes)
-        VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'skipped', $3)
+        INSERT INTO adherence_logs (patient_id, prescription_id, schedule_id, scheduled_time, actual_time, status, notes, medication_name, dosage, route)
+        VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, 'skipped', $5, $6, $7, $8)
         RETURNING *
-    `, [pId, id, reason]);
+    `, [row.patient_id, id, schedule_id || null, scheduled_time || new Date().toISOString(), reason, row.medication_name, row.dosage, row.dosage_form]);
 
     res.json({ success: true, data: result.rows[0] });
   } catch (error) {
@@ -773,27 +1017,37 @@ app.get("/api/history/:patientId", async (req, res) => {
   try {
     const { patientId } = req.params;
     const result = await db.query(`
-       SELECT 
-         a.log_id, a.actual_time, a.status, a.notes, a.side_effects,
-         m.medication_name, p.dosage, m.dosage_form as route
+       SELECT
+         a.log_id, a.actual_time, a.scheduled_time, a.status, a.notes, a.side_effects,
+         COALESCE(m.medication_name, a.medication_name) AS medication_name,
+         COALESCE(p.dosage,          a.dosage)          AS dosage,
+         COALESCE(m.dosage_form,     a.route)           AS route
        FROM adherence_logs a
        LEFT JOIN prescriptions p ON a.prescription_id = p.prescription_id
-       LEFT JOIN medications m ON p.medication_id = m.medication_id
+       LEFT JOIN medications m  ON p.medication_id  = m.medication_id
        WHERE a.patient_id = $1
-       ORDER BY a.actual_time DESC
+       ORDER BY COALESCE(a.actual_time, a.scheduled_time) DESC
     `, [patientId]);
     
-    // Grouping day wise directly in Node
+    // Grouping day wise directly in Node.
+    // Use 24-hour time so the client's log→reminder match (which compares
+    // against mappedTime24 like "22:08") succeeds reliably.
     const grouped = {};
     for(let row of result.rows) {
-        const d = new Date(row.actual_time);
+        const anchor = row.actual_time || row.scheduled_time;
+        if (!anchor) continue; // should not happen, defensive
+        const d = new Date(anchor);
         const dateKey = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-        const timeKey = d.toLocaleTimeString('en-US', { hour: '2-digit', minute:'2-digit' });
-        
+        const timeKey = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute:'2-digit', hour12: false });
+        const scheduled24 = row.scheduled_time
+            ? new Date(row.scheduled_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute:'2-digit', hour12: false })
+            : timeKey;
+
         if(!grouped[dateKey]) grouped[dateKey] = [];
         grouped[dateKey].push({
             time: timeKey,
-            medication: row.medication_name,
+            scheduled_time: scheduled24,
+            medication: row.medication_name || '(deleted medication)',
             dosage: row.dosage || '-',
             route: row.route || '-',
             status: row.status,
@@ -1386,6 +1640,168 @@ app.delete("/api/reminders/:id", async (req, res) => {
     });
   }
 });
+
+// API for Google Cloud Vision OCR
+app.post("/api/ocr", async (req, res) => {
+  const { image } = req.body; // expected: data URI or bare base64 string
+
+  if (!image) {
+    return res.status(400).json({ success: false, error: "No image data provided" });
+  }
+
+  try {
+    // Pick up the mime type from the data URI prefix; fall back to jpeg
+    // when callers send a bare base64 string.
+    const mimeMatch = image.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,/);
+    const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
+    const base64Data = image.replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, "");
+
+    const fullText = await extractTextWithGemini(base64Data, mimeType);
+    res.status(200).json({ success: true, text: fullText });
+  } catch (error) {
+    console.error("Gemini OCR Error:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      details: error.code || error.status || null,
+    });
+  }
+});
+
+// Gemini accepts PDFs natively via inlineData, so the old per-page dance
+// collapses into a single call.
+app.post("/api/ocr-pdf", async (req, res) => {
+  const { pdfBase64 } = req.body;
+
+  if (!pdfBase64) {
+    return res.status(400).json({ success: false, error: "No PDF data provided" });
+  }
+
+  try {
+    const base64Data = pdfBase64.replace(/^data:application\/pdf;base64,/, "");
+    const fullText = await extractTextWithGemini(base64Data, "application/pdf");
+    res.status(200).json({ success: true, text: fullText });
+  } catch (error) {
+    console.error("Gemini PDF OCR Error:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      details: error.code || error.status || null,
+    });
+  }
+});
+
+// Twilio SMS helper — normalizes the phone, calls Twilio, and returns a
+// uniform result the rest of the server already consumes.
+// Shape: { ok: boolean, sentTo: string, provider: <raw Twilio response>,
+//          error?: string, httpStatus: number }
+function normalizePhoneIN(p) {
+  return String(p || "").replace(/\D/g, "").slice(-10);
+}
+
+// Lazily instantiate the Twilio client so the server still boots when
+// credentials are missing (useful for local dev / demos without SMS).
+let twilioClient = null;
+function getTwilioClient() {
+  if (twilioClient) return twilioClient;
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+  if (!sid || !token) return null;
+  twilioClient = twilio(sid, token);
+  return twilioClient;
+}
+
+async function sendSms(phoneNumber, message) {
+  const fromNumber = process.env.TWILIO_FROM_NUMBER;
+  const client = getTwilioClient();
+  if (!client || !fromNumber) {
+    return {
+      ok: false,
+      sentTo: null,
+      provider: null,
+      error: "Twilio credentials missing — set TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_FROM_NUMBER in .env",
+      httpStatus: 500,
+    };
+  }
+
+  const ten = normalizePhoneIN(phoneNumber);
+  if (ten.length !== 10) {
+    return {
+      ok: false,
+      sentTo: ten,
+      provider: null,
+      error: `Invalid phone after normalize: '${phoneNumber}' -> '${ten}'`,
+      httpStatus: 400,
+    };
+  }
+  const to = `+91${ten}`; // Twilio requires E.164 format
+
+  try {
+    const msg = await client.messages.create({
+      body: `[SafeMeds Alert]: ${message}`,
+      from: fromNumber,
+      to,
+    });
+    // Twilio considers queued/sent/delivered as successful submission.
+    // errorCode is non-null only on a rejection at submission time.
+    const ok = !msg.errorCode;
+    const payload = {
+      sid: msg.sid,
+      status: msg.status,
+      to: msg.to,
+      from: msg.from,
+      errorCode: msg.errorCode || null,
+      errorMessage: msg.errorMessage || null,
+    };
+    console.log(`[SMS] to=${to} ok=${ok} sid=${msg.sid} status=${msg.status}`);
+    return {
+      ok,
+      sentTo: to,
+      provider: payload,
+      error: ok ? undefined : (msg.errorMessage || `Twilio errorCode=${msg.errorCode}`),
+      httpStatus: ok ? 200 : 502,
+    };
+  } catch (err) {
+    // Twilio throws a RestException with code + message for validation /
+    // permission errors (e.g. code 21608 = unverified number on trial).
+    const rawCode = err.code || err.status;
+    const rawMsg = err.message || "Unknown Twilio error";
+    console.error(`[SMS] Twilio error code=${rawCode} message=${rawMsg}`);
+    return {
+      ok: false,
+      sentTo: to,
+      provider: { errorCode: rawCode, errorMessage: rawMsg, moreInfo: err.moreInfo || null },
+      error: `Twilio ${rawCode || "error"}: ${rawMsg}`,
+      httpStatus: 502,
+    };
+  }
+}
+
+// API for sending SMS via Twilio
+app.post("/api/send-reminder", async (req, res) => {
+  const { phoneNumber, message } = req.body;
+  const result = await sendSms(phoneNumber, message);
+  res.status(result.httpStatus).json({
+    success: result.ok,
+    sentTo: result.sentTo,
+    provider: result.provider,
+    error: result.ok ? undefined : result.error,
+  });
+});
+
+// Debug: verify Twilio account state without a full reminder
+app.get("/api/sms-test", async (req, res) => {
+  const phone = req.query.phone;
+  const message = req.query.message || "SafeMeds test message. If you received this, SMS works.";
+  const result = await sendSms(phone, message);
+  res.status(result.httpStatus).json({
+    success: result.ok,
+    sentTo: result.sentTo,
+    provider: result.provider,
+    error: result.ok ? undefined : result.error,
+  });
+});
+
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
 });
