@@ -75,10 +75,73 @@ const db = new pg.Client({
   database: process.env.DB_DATABASE,
   user: process.env.DB_USER,
 });
+
+async function runMigrations() {
+  try {
+    console.log("Running database migrations...");
+    await db.query(`
+      ALTER TABLE prescriptions 
+      ADD COLUMN IF NOT EXISTS total_pills INTEGER DEFAULT 0;
+    `);
+
+    await db.query(`
+      ALTER TABLE adherence_logs 
+      ADD COLUMN IF NOT EXISTS side_effects TEXT;
+    `);
+
+    await db.query(`
+      ALTER TABLE adherence_logs 
+      ADD COLUMN IF NOT EXISTS medication_id UUID;
+    `);
+
+    await db.query(`
+      UPDATE adherence_logs a
+      SET medication_id = p.medication_id
+      FROM prescriptions p
+      WHERE a.prescription_id = p.prescription_id
+      AND a.medication_id IS NULL;
+    `);
+
+    await db.query(`
+      ALTER TABLE adherence_logs DROP CONSTRAINT IF EXISTS adherence_logs_status_check;
+    `);
+    
+    await db.query(`
+      ALTER TABLE adherence_logs 
+      ADD CONSTRAINT adherence_logs_status_check 
+      CHECK (status IN ('taken', 'missed', 'skipped', 'delayed', 'logged'));
+    `);
+
+    const activeUserRes = await db.query(`
+      SELECT user_id FROM users 
+      WHERE role = 'patient' 
+      ORDER BY created_at DESC LIMIT 1
+    `);
+    if (activeUserRes.rows.length > 0) {
+      const activeId = activeUserRes.rows[0].user_id;
+      await db.query(`
+        UPDATE adherence_logs 
+        SET patient_id = $1 
+        WHERE patient_id != $1
+      `, [activeId]);
+      
+      await db.query(`
+        DELETE FROM users 
+        WHERE role = 'patient' AND user_id != $1
+      `, [activeId]);
+    }
+
+    console.log("Migrations successful.");
+  } catch (error) {
+    console.error("Migration failed:", error);
+  }
+}
+
 async function connectToDatabase() {
   try {
     await db.connect();
     console.log("Database connection successful");
+<<<<<<< HEAD
     // Add is_paused column if it doesn't exist
     await db.query(`ALTER TABLE prescriptions ADD COLUMN IF NOT EXISTS is_paused BOOLEAN DEFAULT FALSE;`);
 
@@ -120,10 +183,14 @@ async function connectToDatabase() {
     `);
 
     await reconcilePhantomPatients();
+=======
+    await runMigrations();
+>>>>>>> 4f4168d16d2e40cb3c87c8a5df1f1a33cc55010e
   } catch (error) {
-    console.log(error);
+    console.log("Database connection error:", error);
   }
 }
+<<<<<<< HEAD
 
 // One-shot data repair: earlier builds of the edit flow called
 // getOrCreateUser(name, 'patient') without a phone, which generated a
@@ -188,6 +255,819 @@ async function reconcilePhantomPatients() {
 }
 
 connectToDatabase().then(startReminderDispatcher);
+=======
+connectToDatabase().then(() => {
+});
+
+app.post("/api/extract", (req, res) => {
+    try {
+        const { text } = req.body;
+        if (!text) return res.status(400).json({ success: false, error: "No text to extract" });
+
+        const apiPath = path.resolve(__dirname, "../clinical_extraction/api.py");
+        const pyProcess = spawn("python", [apiPath], { shell: true });
+
+        let outputData = "";
+        let errorData = "";
+
+        pyProcess.on("error", (err) => {
+            console.error("Spawn Error:", err);
+            if (!res.headersSent) res.status(500).json({ success: false, error: "Failed to spawn python" });
+        });
+
+        pyProcess.stdout.on("data", (data) => {
+            outputData += data.toString();
+        });
+
+        pyProcess.stderr.on("data", (data) => {
+            errorData += data.toString();
+        });
+
+        pyProcess.on("close", (code) => {
+            if (code !== 0) {
+                console.error("Python Subprocess Failed:", errorData);
+                return res.status(500).json({ success: false, error: "Clinical extraction python process failed" });
+            }
+            try {
+                const responseData = JSON.parse(outputData);
+                res.json({ success: true, data: responseData });
+            } catch(e) {
+                console.error("Python IPC JSON Array Parse Error:", e, outputData);
+                res.status(500).json({ success: false, error: "Python returned unparseable syntax data" });
+            }
+        });
+
+        pyProcess.stdin.write(text);
+        pyProcess.stdin.end();
+
+    } catch(err) {
+        console.error("Extraction routing root error:", err);
+        res.status(500).json({ success: false, error: "Fatal router level processing fail" });
+    }
+});
+
+app.get("/api/medications", async (req, res) => {
+  try {
+    const result = await db.query(
+      "SELECT * FROM medications ORDER BY created_at DESC",
+    );
+    res.json({
+      success: true,
+      data: result.rows,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.post("/api/medications", async (req, res) => {
+  try {
+    const { medication_name, dosage_form, strength } = req.body;
+
+    if (!medication_name || !dosage_form) {
+      return res.status(400).json({
+        success: false,
+        error: "medication_name and dosage_form are required",
+      });
+    }
+
+    const result = await db.query(
+      `INSERT INTO medications (medication_name, dosage_form, strength) 
+             VALUES ($1, $2, $3) 
+             RETURNING *`,
+      [medication_name, dosage_form, strength],
+    );
+
+    res.status(201).json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.put("/api/medications/:id", async (req, res) => {
+  const { id } = req.params;
+  const { medication_name, dosage_form, strength } = req.body;
+  try {
+    const result = await db.query(
+      `UPDATE medications 
+       SET medication_name = COALESCE($1, medication_name),
+           dosage_form = COALESCE($2, dosage_form),
+           strength = COALESCE($3, strength)
+       WHERE medication_id = $4
+       RETURNING *`,
+      [medication_name, dosage_form, strength, id],
+    );
+
+    if (result.rows.length == 0) {
+      return res.status(404).json({
+        success: false,
+        error: "No medication found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.delete("/api/medications/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(
+      "DELETE FROM medications WHERE medication_id = $1 RETURNING *",
+      [id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Medication not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Medication deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.get("/api/users", async (req, res) => {
+  try {
+    const result = await db.query(
+      "SELECT user_id, email, full_name, phone_number, date_of_birth, role, is_active, created_at FROM users ORDER BY created_at DESC",
+    );
+    res.json({
+      success: true,
+      data: result.rows,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.get("/api/users/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await db.query(
+      "SELECT user_id, email, full_name, phone_number, date_of_birth, role, is_active, created_at FROM users WHERE user_id = $1",
+      [id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.post("/api/users", async (req, res) => {
+  try {
+    const { email, full_name, phone_number, date_of_birth, role } = req.body;
+
+    if (!email || !full_name || !role) {
+      return res.status(400).json({
+        success: false,
+        error: "email, full_name, and role are required",
+      });
+    }
+
+    const validRoles = ["patient", "doctor", "admin"];
+    if (!validRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        error: "role must be 'patient', 'doctor', or 'admin'",
+      });
+    }
+
+    const result = await db.query(
+      `INSERT INTO users (email, password_hash, full_name, phone_number, date_of_birth, role) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
+       RETURNING user_id, email, full_name, phone_number, date_of_birth, role, is_active, created_at`,
+      [email, "no_password", full_name, phone_number, date_of_birth, role],
+    );
+
+    res.status(201).json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    if (error.code === "23505") {
+      return res.status(409).json({
+        success: false,
+        error: "Email already exists",
+      });
+    }
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.put("/api/users/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { email, full_name, phone_number, date_of_birth, role, is_active } =
+      req.body;
+
+    if (role) {
+      const validRoles = ["patient", "doctor", "admin"];
+      if (!validRoles.includes(role)) {
+        return res.status(400).json({
+          success: false,
+          error: "role must be 'patient', 'doctor', or 'admin'",
+        });
+      }
+    }
+
+    const result = await db.query(
+      `UPDATE users 
+       SET email = COALESCE($1, email),
+           full_name = COALESCE($2, full_name),
+           phone_number = COALESCE($3, phone_number),
+           date_of_birth = COALESCE($4, date_of_birth),
+           role = COALESCE($5, role),
+           is_active = COALESCE($6, is_active)
+       WHERE user_id = $7
+       RETURNING user_id, email, full_name, phone_number, date_of_birth, role, is_active, created_at`,
+      [email, full_name, phone_number, date_of_birth, role, is_active, id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    if (error.code === "23505") {
+      return res.status(409).json({
+        success: false,
+        error: "Email already exists",
+      });
+    }
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.delete("/api/users/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(
+      "DELETE FROM users WHERE user_id = $1 RETURNING user_id",
+      [id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "User not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "User deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.get("/api/prescriptions", async (req, res) => {
+  try {
+    const { patientId } = req.query;
+    let query = `SELECT p.*, 
+              u.full_name as patient_name,
+              d.full_name as doctor_name,
+              m.medication_name,
+              m.dosage_form,
+              m.strength
+       FROM prescriptions p
+       LEFT JOIN users u ON p.patient_id = u.user_id
+       LEFT JOIN users d ON p.doctor_id = d.user_id
+       LEFT JOIN medications m ON p.medication_id = m.medication_id`;
+    
+    let params = [];
+    if (patientId) {
+        query += ` WHERE p.patient_id = $1`;
+        params.push(patientId);
+    }
+    
+    query += ` ORDER BY p.created_at DESC`;
+
+    const result = await db.query(query, params);
+    res.json({
+      success: true,
+      data: result.rows,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.post("/api/prescriptions", async (req, res) => {
+  try {
+    const {
+      patient_id,
+      doctor_id,
+      medication_id,
+      dosage,
+      frequency,
+      start_date,
+      end_date,
+      instructions,
+      total_pills,
+    } = req.body;
+
+    const result = await db.query(
+      `INSERT INTO prescriptions 
+       (patient_id, doctor_id, medication_id, dosage, frequency, start_date, end_date, instructions, total_pills) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) 
+       RETURNING *`,
+      [
+        patient_id,
+        doctor_id,
+        medication_id,
+        dosage,
+        frequency,
+        start_date,
+        end_date,
+        instructions,
+        total_pills || 0,
+      ],
+    );
+    res.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.put("/api/prescriptions/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { dosage, frequency, start_date, end_date, instructions, is_active, total_pills } =
+      req.body;
+
+    const result = await db.query(
+      `UPDATE prescriptions 
+       SET dosage = COALESCE($1, dosage),
+           frequency = COALESCE($2, frequency),
+           start_date = COALESCE($3, start_date),
+           end_date = COALESCE($4, end_date),
+           instructions = COALESCE($5, instructions),
+           is_active = COALESCE($6, is_active),
+           total_pills = COALESCE($7, total_pills)
+       WHERE prescription_id = $8
+       RETURNING *`,
+      [dosage, frequency, start_date, end_date, instructions, is_active, total_pills, id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Prescription not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.delete("/api/prescriptions/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await db.query(
+      `
+      DELETE FROM prescriptions WHERE prescription_id = $1 RETURNING prescription_id
+    `,
+      [id],
+    );
+    res.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.put("/api/prescriptions/:id/take", async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const result = await db.query(
+      `UPDATE prescriptions 
+       SET total_pills = GREATEST(0, total_pills - 1)
+       WHERE prescription_id = $1
+       RETURNING *`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, error: "Prescription not found" });
+    }
+
+    try {
+        const pId = result.rows[0].patient_id;
+        const mId = result.rows[0].medication_id;
+        await db.query(`
+            INSERT INTO adherence_logs (patient_id, prescription_id, medication_id, scheduled_time, actual_time, status)
+            VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'taken')
+        `, [pId, id, mId]);
+    } catch(err) {
+        console.error("Adherence Log failed: ", err);
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.put("/api/prescriptions/:id/skip", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    
+    const pRes = await db.query('SELECT patient_id, medication_id FROM prescriptions WHERE prescription_id = $1', [id]);
+    if(pRes.rows.length === 0) return res.status(404).json({ success: false, error: "Prescription not found" });
+    const pId = pRes.rows[0].patient_id;
+    const mId = pRes.rows[0].medication_id;
+
+    const result = await db.query(`
+        INSERT INTO adherence_logs (patient_id, prescription_id, medication_id, scheduled_time, actual_time, status, notes)
+        VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'skipped', $4)
+        RETURNING *
+    `, [pId, id, mId, reason]);
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post("/api/prescriptions/:id/side_effect", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { symptoms } = req.body;
+    
+    const pRes = await db.query('SELECT patient_id FROM prescriptions WHERE prescription_id = $1', [id]);
+    if(pRes.rows.length === 0) return res.status(404).json({ success: false, error: "Prescription not found" });
+    const pId = pRes.rows[0].patient_id;
+
+    const existing = await db.query(`
+       SELECT log_id FROM adherence_logs 
+       WHERE prescription_id = $1 AND DATE(actual_time) = CURRENT_DATE
+       ORDER BY actual_time DESC LIMIT 1
+    `, [id]);
+
+    let result;
+    if(existing.rows.length > 0) {
+        result = await db.query(`
+           UPDATE adherence_logs SET side_effects = $1 WHERE log_id = $2 RETURNING *
+        `, [symptoms, existing.rows[0].log_id]);
+    } else {
+        const pRes = await db.query('SELECT patient_id, medication_id FROM prescriptions WHERE prescription_id = $1', [id]);
+        if(pRes.rows.length === 0) return res.status(404).json({ success: false, error: "Prescription not found" });
+        const pId = pRes.rows[0].patient_id;
+        const mId = pRes.rows[0].medication_id;
+
+        result = await db.query(`
+            INSERT INTO adherence_logs (patient_id, prescription_id, medication_id, scheduled_time, actual_time, status, side_effects)
+            VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP, 'logged', $4)
+            RETURNING *
+        `, [pId, id, mId, symptoms]);
+    }
+
+    res.json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get("/api/history/:patientId", async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    const result = await db.query(`
+       SELECT 
+         a.log_id, a.actual_time, a.status, a.notes, a.side_effects,
+         m.medication_name, p.dosage, m.dosage_form as route
+       FROM adherence_logs a
+       LEFT JOIN medications m ON a.medication_id = m.medication_id
+       LEFT JOIN prescriptions p ON a.prescription_id = p.prescription_id
+       WHERE a.patient_id = $1
+       ORDER BY a.actual_time DESC
+    `, [patientId]);
+    
+    const grouped = {};
+    for(let row of result.rows) {
+        const d = new Date(row.actual_time);
+        const dateKey = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+        const timeKey = d.toLocaleTimeString('en-US', { hour: '2-digit', minute:'2-digit' });
+        
+        if(!grouped[dateKey]) grouped[dateKey] = [];
+        grouped[dateKey].push({
+            time: timeKey,
+            medication: row.medication_name,
+            dosage: row.dosage || '-',
+            route: row.route || '-',
+            status: row.status,
+            reason: row.notes || '-',
+            notes: row.side_effects || '-'
+        });
+    }
+
+    res.json({ success: true, data: grouped });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.delete("/api/history/:patientId", async (req, res) => {
+  try {
+    const { patientId } = req.params;
+    await db.query(`DELETE FROM adherence_logs WHERE patient_id = $1`, [patientId]);
+    res.json({ success: true, message: "History cleared successfully" });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post("/api/schedules", async (req, res) => {
+  try {
+    const { prescription_id, time_of_day, dosage_amount } = req.body;
+
+    if (!prescription_id || !time_of_day || !dosage_amount) {
+      return res.status(400).json({
+        success: false,
+        error: "prescription_id, time_of_day, and dosage_amount are required",
+      });
+    }
+
+    const result = await db.query(
+      `INSERT INTO medication_schedules 
+       (prescription_id, time_of_day, dosage_amount, is_active)
+       VALUES ($1, $2, $3, true)
+       RETURNING *`,
+      [prescription_id, time_of_day, dosage_amount],
+    );
+
+    res.status(201).json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.get("/api/schedules/prescription/:prescription_id", async (req, res) => {
+  try {
+    const { prescription_id } = req.params;
+
+    const result = await db.query(
+      `SELECT 
+         ms.*,
+         p.dosage as prescription_dosage,
+         p.frequency,
+         u.full_name as patient_name,
+         m.medication_name,
+         m.dosage_form,
+         m.strength
+       FROM medication_schedules ms
+       LEFT JOIN prescriptions p ON ms.prescription_id = p.prescription_id
+       LEFT JOIN users u ON p.patient_id = u.user_id
+       LEFT JOIN medications m ON p.medication_id = m.medication_id
+       WHERE ms.prescription_id = $1
+       ORDER BY ms.time_of_day ASC`,
+      [prescription_id],
+    );
+
+    res.json({
+      success: true,
+      data: result.rows,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.get("/api/schedules/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(
+      `SELECT 
+         ms.*,
+         p.dosage as prescription_dosage,
+         p.frequency,
+         p.instructions,
+         u.full_name as patient_name,
+         m.medication_name,
+         m.dosage_form,
+         m.strength
+       FROM medication_schedules ms
+       LEFT JOIN prescriptions p ON ms.prescription_id = p.prescription_id
+       LEFT JOIN users u ON p.patient_id = u.user_id
+       LEFT JOIN medications m ON p.medication_id = m.medication_id
+       WHERE ms.schedule_id = $1`,
+      [id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Schedule not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.get("/api/schedules", async (req, res) => {
+  try {
+    const { patientId } = req.query;
+    let query = `SELECT 
+         ms.*,
+         p.dosage as prescription_dosage,
+         p.frequency,
+         u.full_name as patient_name,
+         m.medication_name
+       FROM medication_schedules ms
+       LEFT JOIN prescriptions p ON ms.prescription_id = p.prescription_id
+       LEFT JOIN users u ON p.patient_id = u.user_id
+       LEFT JOIN medications m ON p.medication_id = m.medication_id`;
+    
+    let params = [];
+    if (patientId) {
+        query += ` WHERE p.patient_id = $1`;
+        params.push(patientId);
+    }
+
+    query += ` ORDER BY ms.time_of_day ASC`;
+
+    const result = await db.query(query, params);
+
+    res.json({
+      success: true,
+      data: result.rows,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.put("/api/schedules/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { time_of_day, dosage_amount, is_active } = req.body;
+
+    const result = await db.query(
+      `UPDATE medication_schedules
+       SET time_of_day = COALESCE($1, time_of_day),
+           dosage_amount = COALESCE($2, dosage_amount),
+           is_active = COALESCE($3, is_active)
+       WHERE schedule_id = $4
+       RETURNING *`,
+      [time_of_day, dosage_amount, is_active, id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Schedule not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      data: result.rows[0],
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+app.delete("/api/schedules/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result = await db.query(
+      "DELETE FROM medication_schedules WHERE schedule_id = $1 RETURNING *",
+      [id],
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Schedule not found",
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Schedule deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+>>>>>>> 4f4168d16d2e40cb3c87c8a5df1f1a33cc55010e
 
 const VALID_REMINDER_TYPES = ["push", "sms", "email", "in_app"];
 const VALID_REMINDER_STATUSES = ["pending", "sent", "failed", "dismissed"];
@@ -313,6 +1193,7 @@ async function startReminderDispatcher() {
   setInterval(runDispatcher, intervalMs);
 }
 
+<<<<<<< HEAD
 // API for Intelligent Extraction deeply interconnected to python module
 app.post("/api/extract", (req, res) => {
     try {
@@ -1286,13 +2167,14 @@ app.delete("/api/schedules/:id", async (req, res) => {
 
 // API for reminders
 // 1. POST - Create Reminder
+=======
+>>>>>>> 4f4168d16d2e40cb3c87c8a5df1f1a33cc55010e
 app.post("/api/reminders", async (req, res) => {
   try {
     const { schedule_id, patient_id, reminder_time, reminder_type } = req.body;
     const status = normalizeReminderStatus(req.body.status) || "pending";
     const normalizedType = normalizeReminderType(reminder_type);
 
-    // Validation
     if (!schedule_id || !patient_id || !reminder_time || !reminder_type) {
       return res.status(400).json({
         success: false,
@@ -1346,7 +2228,6 @@ app.post("/api/reminders", async (req, res) => {
   }
 });
 
-// 2. GET - Reminders for a Specific Patient (SPECIFIC ROUTE FIRST)
 app.get("/api/reminders/patient/:patient_id", async (req, res) => {
   try {
     const { patient_id } = req.params;
@@ -1382,7 +2263,6 @@ app.get("/api/reminders/patient/:patient_id", async (req, res) => {
   }
 });
 
-// 3. GET - Pending Reminders (SPECIFIC ROUTE)
 app.get("/api/reminders/pending", async (req, res) => {
   try {
     const result = await db.query(
@@ -1415,7 +2295,6 @@ app.get("/api/reminders/pending", async (req, res) => {
   }
 });
 
-// 4. GET - Single Reminder by ID
 app.get("/api/reminders/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -1461,7 +2340,6 @@ app.get("/api/reminders/:id", async (req, res) => {
   }
 });
 
-// 5. GET - All Reminders (GENERAL ROUTE LAST)
 app.get("/api/reminders", async (req, res) => {
   try {
     const result = await db.query(
@@ -1490,7 +2368,6 @@ app.get("/api/reminders", async (req, res) => {
   }
 });
 
-// 5.5. POST - Dispatch due reminders now
 app.post("/api/reminders/dispatch", async (req, res) => {
   try {
     const dispatchResult = await dispatchDueReminders();
@@ -1506,13 +2383,11 @@ app.post("/api/reminders/dispatch", async (req, res) => {
   }
 });
 
-// 6. PUT - Update Reminder Status (mark as sent/dismissed/failed)
 app.put("/api/reminders/:id/status", async (req, res) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
 
-    // Validation
     const validStatuses = ["pending", "sent", "failed", "dismissed"];
     if (!status || !validStatuses.includes(status)) {
       return res.status(400).json({
@@ -1552,7 +2427,6 @@ app.put("/api/reminders/:id/status", async (req, res) => {
   }
 });
 
-// 7. PUT - Update Reminder (general update)
 app.put("/api/reminders/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -1564,7 +2438,6 @@ app.put("/api/reminders/:id", async (req, res) => {
       ? normalizeReminderStatus(status)
       : undefined;
 
-    // Validate reminder_type if provided
     if (reminder_type && !VALID_REMINDER_TYPES.includes(normalizedType)) {
       return res.status(400).json({
         success: false,
@@ -1612,7 +2485,6 @@ app.put("/api/reminders/:id", async (req, res) => {
   }
 });
 
-// 8. DELETE - Delete Reminder
 app.delete("/api/reminders/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -1641,6 +2513,7 @@ app.delete("/api/reminders/:id", async (req, res) => {
   }
 });
 
+<<<<<<< HEAD
 // API for Google Cloud Vision OCR
 app.post("/api/ocr", async (req, res) => {
   const { image } = req.body; // expected: data URI or bare base64 string
@@ -1802,6 +2675,9 @@ app.get("/api/sms-test", async (req, res) => {
   });
 });
 
+=======
+startReminderDispatcher();
+>>>>>>> 4f4168d16d2e40cb3c87c8a5df1f1a33cc55010e
 app.listen(port, () => {
   console.log(`Server is running at http://localhost:${port}`);
 });
